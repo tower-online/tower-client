@@ -1,0 +1,9 @@
+include "types.fbs";
+
+namespace ${packet_namespace};
+
+table PlayerMovement {
+    target_direction: Vector2;
+}
+
+root_type PlayerMovement;

@@ -5,4 +5,13 @@
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'ios' ">net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.FlatBuffers" Version="24.3.25" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Schema\compile.sh" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Network\Packet\" />
+  </ItemGroup>
 </Project>

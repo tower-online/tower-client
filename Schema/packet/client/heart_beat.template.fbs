@@ -1,0 +1,6 @@
+namespace ${packet_namespace};
+
+table HeartBeat {
+}
+
+root_type HeartBeat;

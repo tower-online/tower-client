@@ -1,0 +1,15 @@
+namespace ${packet_namespace};
+
+enum ClientJoinResult : uint8 {
+    NONE,
+    OK,
+    INVALID_USERNAME_PLATFORM,
+    INVALID_TOKEN,
+    INACTIVE_USER
+}
+
+table ClientJoinResponse {
+    result: ClientJoinResult;
+}
+
+root_type ClientJoinResponse;

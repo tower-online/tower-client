@@ -1,0 +1,19 @@
+include "types.fbs";
+
+namespace ${packet_namespace};
+
+enum EntityType: uint16 {
+    NONE,
+    PLAYER_HUMAN,
+    PIGGY
+}
+
+enum EntityResourceType: uint8 {
+    NONE,
+    HEALTH,
+}
+
+enum EntityResourceModifyMode : uint8 {
+    ARITHMETIC,
+    SET
+}
