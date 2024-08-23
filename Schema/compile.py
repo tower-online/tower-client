@@ -28,13 +28,13 @@ for input_file in files:
     if args.filename_pascalcase:
         filename = ''.join(word.capitalize() for word in filename.split('_'))
     
-    output_path = os.path.join("out", path)
-    output_file = os.path.join("out", path, filename)
+    temp_path = os.path.join("temp", path)
+    temp_file = os.path.join("temp", path, filename)
 
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    if not os.path.exists(temp_path):
+        os.makedirs(temp_path)
 
-    with open(input_file, 'r') as src, open(output_file, 'w') as dst:
+    with open(input_file, 'r') as src, open(temp_file, 'w') as dst:
         lines = src.readlines()
 
         # Change include file path pascal case
@@ -53,7 +53,7 @@ for input_file in files:
         content = content.replace("${packet_namespace}", args.namespace)
         dst.write(content)
     
-    print(f"{input_file} -> {output_file}")
+    print(f"{input_file} -> {temp_file}")
 
 
 # Download flatc
@@ -79,13 +79,13 @@ if args.download_flatc:
 
 
 # Compile schemas
-schemas = pathlib.Path("out").rglob("*.fbs")
+schemas = pathlib.Path("temp").rglob("*.fbs")
 
 flatc_args = ["./flatc"]
 if args.lang == "cpp":
     pass
 elif args.lang == "csharp":
-    flatc_args += ["--csharp", "--filename-suffix", '""', "-o", args.output, "-I", f"{os.path.join("out", args.input)}"]
+    flatc_args += ["--csharp", "--filename-suffix", '""', "-o", args.output, "-I", f"{os.path.join("temp", args.input)}"]
     flatc_args += [schema.as_posix() for schema in schemas]
 
 print(flatc_args)
