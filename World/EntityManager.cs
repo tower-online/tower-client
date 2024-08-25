@@ -1,5 +1,5 @@
-using System;
 using Godot;
+using System;
 using System.Collections.Generic;
 using Tower.Network;
 using Tower.Network.Packet;
@@ -46,20 +46,15 @@ public partial class EntityManager : Node
     {
         for (var i = 0; i < entityIds.Length; i++)
         {
-            if (!Enum.IsDefined(typeof(EntityType), entityIds[i]))
-            {
-                GD.PrintErr($"{nameof(EntityManager)}/{nameof(OnEntitySpawns)}: Invalid entity type {entityTypes[i]}");
-                continue;
-            }
-
             Entity entity;
-            switch ((EntityType)entityIds[i])
+            switch ((EntityType)entityTypes[i])
             {
                 case EntityType.PLAYER_HUMAN:
                     entity = (Player)_playerScene.Instantiate();
                     break;
                 
                 default:
+                    GD.PrintErr($"{nameof(EntityManager)}/{nameof(OnEntitySpawns)}: Invalid entity type {entityTypes[i]}");
                     return;
             }
 
