@@ -2,10 +2,12 @@ using Godot;
 using Google.FlatBuffers;
 using System;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Tower.Network.Packet;
 
+// HTTP
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -16,10 +18,20 @@ namespace Tower.Network;
 public partial class Connection : Node
 {
     [Signal]
-    public delegate void EntityMovementEventHandler();
+    public delegate void SEntityMovementsEventHandler(
+        int[] entityIds, Godot.Vector2[] targetDirections, Godot.Vector2[] targetPositions);
+
+    [Signal]
+    public delegate void SEntitySpawnsEventHandler(
+        int[] entityIds, int[] entityTypes, Godot.Vector2[] positions, float[] rotations);
+
+    [Signal]
+    public delegate void SPlayerSpawnEventHandler(
+        int entityId, int entityType, Godot.Vector2 position, float rotation);
 
     private readonly TcpClient _client = new TcpClient();
     private NetworkStream _stream;
+    private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
 
     public override void _Ready()
     {
@@ -32,23 +44,43 @@ public partial class Connection : Node
 
             if (!await ConnectAsync("localhost", 30000)) return;
 
+            // Receiving loop
             _ = Task.Run(async () =>
             {
                 while (_client.Connected)
                 {
-                    byte[] buffer = await ReceivePacketAsync();
-                    await HandlePacketAsync(new ByteBuffer(buffer));
+                    var buffer = await ReceivePacketAsync();
+                    HandlePacket(buffer);
                 }
             });
 
-            var builder = new FlatBufferBuilder(256);
-            var usernameOffset = builder.CreateString(username);
-            var tokenOffset = builder.CreateString(token);
-            var request = ClientJoinRequest.CreateClientJoinRequest(builder, ClientPlatform.TEST, usernameOffset, tokenOffset);
+            // Sending loop
+            _ = Task.Run(async () =>
+            {
+                while (_client.Connected)
+                {
+                    var buffer = await _sendBufferBlock.ReceiveAsync();
+                    try
+                    {
+                        await _stream.WriteAsync(buffer.ToSizedArray());
+                    }
+                    catch (Exception)
+                    {
+                        Disconnect();
+                    }
+                }
+            });
+
+
+            // Send ClientJoinRequest with acquired token
+            var builder = new FlatBufferBuilder(512);
+            var request =
+                ClientJoinRequest.CreateClientJoinRequest(builder,
+                    ClientPlatform.TEST, builder.CreateString(username), builder.CreateString(token));
             var packetBase = PacketBase.CreatePacketBase(builder, PacketType.ClientJoinRequest, request.Value);
             builder.FinishSizePrefixed(packetBase.Value);
-            
-            await SendPacketAsync(builder.DataBuffer);
+
+            SendPacket(builder.DataBuffer);
         });
     }
 
@@ -130,9 +162,9 @@ public partial class Connection : Node
         base._ExitTree();
     }
 
-    private async Task<byte[]> ReceivePacketAsync()
+    private async Task<ByteBuffer> ReceivePacketAsync()
     {
-        if (!_client.Connected) return [];
+        if (!_client.Connected) return new ByteBuffer(0);
 
         try
         {
@@ -142,7 +174,7 @@ public partial class Connection : Node
             var bodyBuffer = new byte[ByteBufferUtil.GetSizePrefix(new ByteBuffer(headerBuffer))];
             await _stream.ReadExactlyAsync(bodyBuffer, 0, bodyBuffer.Length);
 
-            return bodyBuffer;
+            return new ByteBuffer(bodyBuffer);
         }
         catch (OperationCanceledException)
         {
@@ -153,28 +185,17 @@ public partial class Connection : Node
             Disconnect();
         }
 
-        return [];
+        return new ByteBuffer(0);
     }
 
-    private async Task SendPacketAsync(ByteBuffer buffer)
+    private void SendPacket(ByteBuffer buffer)
     {
         if (!_client.Connected) return;
-        
-        try
-        {
-            await _stream.WriteAsync(buffer.ToSizedArray());
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception)
-        {
-            // GD.PrintErr($"[{nameof(Connection)}] Error sending: {ex}");
-            Disconnect();
-        }
+
+        _sendBufferBlock.Post(buffer);
     }
 
-    private async Task HandlePacketAsync(ByteBuffer buffer)
+    private void HandlePacket(ByteBuffer buffer)
     {
         // if (!PacketBaseVerify.Verify(new Verifier(buffer), 0))
         // {
@@ -186,17 +207,35 @@ public partial class Connection : Node
         var packetBase = PacketBase.GetRootAsPacketBase(buffer);
         switch (packetBase.PacketBaseType)
         {
-            case PacketType.HeartBeat:
-                await HandleHeartBeat();
+            case PacketType.EntityMovements:
+                HandleEntityMovements(packetBase.PacketBase_AsEntityMovements());
+                break;
+
+            case PacketType.EntitySpawns:
+                HandleEntitySpawns(packetBase.PacketBase_AsEntitySpawns());
+                break;
+
+            case PacketType.EntityDespawn:
+                HandleEntityDespawn(packetBase.PacketBase_AsEntityDespawn());
+                break;
+
+            case PacketType.PlayerSpawn:
+                HandlePlayerSpawn(packetBase.PacketBase_AsPlayerSpawn());
                 break;
 
             case PacketType.ClientJoinResponse:
                 HandleClientJoinResponse(packetBase.PacketBase_AsClientJoinResponse());
                 break;
+
+            case PacketType.HeartBeat:
+                HandleHeartBeat();
+                break;
         }
     }
 
-    private async Task HandleHeartBeat()
+    #region Client Packet Handlers
+
+    private void HandleHeartBeat()
     {
         var builder = new FlatBufferBuilder(64);
 
@@ -205,7 +244,7 @@ public partial class Connection : Node
         var packetBase = PacketBase.CreatePacketBase(builder, PacketType.HeartBeat, heartBeat.Value);
         builder.FinishSizePrefixed(packetBase.Value);
 
-        await SendPacketAsync(builder.DataBuffer);
+        SendPacket(builder.DataBuffer);
     }
 
     private void HandleClientJoinResponse(ClientJoinResponse response)
@@ -213,9 +252,113 @@ public partial class Connection : Node
         if (response.Result != ClientJoinResult.OK)
         {
             GD.PrintErr($"[{nameof(Connection)}] [ClientJoinResponse] Failed");
+
+            //TODO: Signal fail or retry?
+            Disconnect();
             return;
         }
 
         GD.Print($"[{nameof(Connection)}] [ClientJoinResponse] OK");
     }
+
+    #endregion
+
+    #region Entity Packet Handlers
+
+    private void HandleEntityMovements(EntityMovements movements)
+    {
+        var length = movements.MovementsLength;
+        var entityIds = new int[length];
+        var targetDirections = new Godot.Vector2[length];
+        var targetPositions = new Godot.Vector2[length];
+
+        for (var i = 0; i < length; i++)
+        {
+            if (!movements.Movements(i).HasValue)
+            {
+                GD.PrintErr($"[{nameof(Connection)}] [{nameof(HandleEntityMovements)}] Invalid array");
+                return;
+            }
+
+            var movement = movements.Movements(i).Value;
+            var targetDirection = movement.TargetDirection;
+            var targetPosition = movement.TargetPosition;
+
+            entityIds[i] = (int)movement.EntityId;
+            targetDirections[i] = new Godot.Vector2(targetDirection.X, targetDirection.Y);
+            targetPositions[i] = new Godot.Vector2(targetPosition.X, targetPosition.Y);
+        }
+
+        CallDeferred(MethodName.EmitSignal, SignalName.SEntityMovements,
+            entityIds, targetDirections, targetPositions);
+    }
+
+    private void HandleEntitySpawns(EntitySpawns spawns)
+    {
+        var length = spawns.SpawnsLength;
+        var entityIds = new int[length];
+        var entityTypes = new int[length];
+        var positions = new Godot.Vector2[length];
+        var rotations = new float[length];
+
+        for (var i = 0; i < length; i++)
+        {
+            if (!spawns.Spawns(i).HasValue)
+            {
+                GD.PrintErr($"[{nameof(Connection)}] [{nameof(HandleEntitySpawns)}] Invalid array");
+                return;
+            }
+
+            var spawn = spawns.Spawns(i).Value;
+            var position = spawn.Position;
+
+            entityIds[i] = (int)spawn.EntityId;
+            entityTypes[i] = (int)spawn.EntityType;
+            positions[i] = new Godot.Vector2(position.X, position.Y);
+            rotations[i] = spawn.Rotation;
+        }
+
+        CallDeferred(MethodName.EmitSignal, SignalName.SEntitySpawns,
+            entityIds, entityTypes, positions, rotations);
+    }
+
+    private void HandleEntityDespawn(EntityDespawn despawn)
+    {
+    }
+
+    #endregion
+
+    #region Player Packet Handlers
+
+    private void HandlePlayerSpawn(PlayerSpawn spawn)
+    {
+        var position = new Godot.Vector2();
+        if (spawn.Position.HasValue)
+        {
+            var pos = spawn.Position.Value;
+            position.X = pos.X;
+            position.Y = pos.Y;
+        }
+        
+        CallDeferred(MethodName.EmitSignal, SignalName.SPlayerSpawn, (int)spawn.EntityId, (int)spawn.EntityType, position, spawn.Rotation);
+    }
+
+    #endregion
+
+    #region Player Action Handlers
+
+    public void HandlePlayerMovement(Godot.Vector2 targetDirection)
+    {
+        var builder = new FlatBufferBuilder(128);
+        PlayerMovement.StartPlayerMovement(builder);
+        PlayerMovement.AddTargetDirection(builder,
+            Packet.Vector2.CreateVector2(builder, targetDirection.X, targetDirection.Y));
+        var movement = PlayerMovement.EndPlayerMovement(builder);
+        var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerMovement, movement.Value);
+        builder.FinishSizePrefixed(packetBase.Value);
+
+        SendPacket(builder.DataBuffer);
+    }
+
+    #endregion
 }

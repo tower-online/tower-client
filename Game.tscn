@@ -1,3 +1,21 @@
-[gd_scene format=3 uid="uid://dgcnih21whcoe"]
+[gd_scene load_steps=3 format=3 uid="uid://dgcnih21whcoe"]
 
-[node name="Game" type="Node3D"]
+[ext_resource type="MeshLibrary" uid="uid://crojd5pftclxa" path="res://World/PrototypeMeshLibrary.tres" id="1_4wvpv"]
+
+[sub_resource type="Environment" id="Environment_gbbx6"]
+
+[node name="Game" type="Node"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_gbbx6")
+
+[node name="GridMap" type="GridMap" parent="."]
+mesh_library = ExtResource("1_4wvpv")
+cell_size = Vector3(1, 1, 1)
+data = {
+"cells": PackedInt32Array(-4, 65535, 0, -3, 65535, 0, -2, 65535, 0, -1, 65535, 0, -65536, 65535, 0, -65535, 65535, 0, -65534, 65535, 0, -65533, 65535, 0, -4, 65532, 0, -4, 65533, 0, -4, 65534, 0, -3, 65532, 0, -2, 65532, 0, -1, 65532, 0, -65536, 65532, 0, -65535, 65532, 0, -65534, 65532, 0, -65533, 65532, 0, -65533, 65533, 0, -65533, 65534, 0, -3, 65533, 0, -2, 65533, 0, -1, 65533, 0, -65536, 65533, 0, -65535, 65533, 0, -65534, 65533, 0, -65534, 65534, 0, -65535, 65534, 0, -65536, 65534, 0, -1, 65534, 0, -2, 65534, 0, -3, 65534, 0, -4, 0, 0, -4, 1, 0, -4, 2, 0, -4, 3, 0, -3, 3, 0, -2, 3, 0, -1, 3, 0, -65536, 3, 0, -65535, 3, 0, -65534, 3, 0, -65533, 3, 0, -65533, 2, 0, -65533, 1, 0, -65533, 0, 0, -3, 0, 0, -3, 1, 0, -3, 2, 0, -2, 2, 0, -1, 2, 0, -65536, 2, 0, -65535, 2, 0, -65534, 2, 0, -65534, 1, 0, -65534, 0, 0, -2, 0, 0, -2, 1, 0, -1, 1, 0, -65536, 1, 0, -65535, 1, 0, -65535, 0, 0, -65536, 0, 0, -1, 0, 0)
+}
+metadata/_editor_floor_ = Vector3(0, -1, 0)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.255041, 0.96693, 0, -0.96693, 0.255041, 0, 12.628, 0)

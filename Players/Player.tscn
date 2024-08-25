@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://c3j57lk80h7kf"]
+
+[ext_resource type="Script" path="res://Players/Player.cs" id="1_ererd"]
+[ext_resource type="PackedScene" uid="uid://dfdda5m25s8ig" path="res://Players/Character.glb" id="2_ho3fb"]
+
+[node name="Player" type="Node3D"]
+script = ExtResource("1_ererd")
+
+[node name="Mesh" parent="." instance=ExtResource("2_ho3fb")]

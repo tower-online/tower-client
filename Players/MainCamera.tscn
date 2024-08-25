@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://wae7sb2fcq2a"]
+
+[ext_resource type="Script" path="res://Players/main_camera.gd" id="1_4hs5j"]
+
+[node name="MainCamera" type="Camera3D"]
+script = ExtResource("1_4hs5j")
+distance = 5.0
