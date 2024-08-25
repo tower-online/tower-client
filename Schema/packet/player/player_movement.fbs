@@ -1,6 +1,6 @@
 include "types.fbs";
 
-namespace ${packet_namespace};
+namespace tower.network.packet;
 
 table PlayerMovement {
     target_direction: Vector2;

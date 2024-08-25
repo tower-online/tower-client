@@ -51,7 +51,7 @@ for input_file in files:
                 m = re.match(r'^namespace ([^"]*);', line)
                 if m:
                     pascalcased_namespace = '.'.join(word.capitalize() for word in m.group(1).split('.'))
-                    lines[i] = f''
+                    lines[i] = f'namespace {pascalcased_namespace};\n'
 
         dst.write("".join(lines))
     

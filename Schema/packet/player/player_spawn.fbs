@@ -1,6 +1,6 @@
 include "entity_types.fbs";
 
-namespace ${packet_namespace};
+namespace tower.network.packet;
 
 table PlayerSpawn {
     entity_type: EntityType;
