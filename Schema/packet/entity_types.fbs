@@ -1,6 +1,6 @@
 include "types.fbs";
 
-namespace ${packet_namespace};
+namespace tower.network.packet;
 
 enum EntityType: uint16 {
     NONE,
@@ -13,7 +13,7 @@ enum EntityResourceType: uint8 {
     HEALTH,
 }
 
-enum EntityResourceModifyMode : uint8 {
-    ARITHMETIC,
+enum EntityResourceChangeMode : uint8 {
+    ADD,
     SET
 }

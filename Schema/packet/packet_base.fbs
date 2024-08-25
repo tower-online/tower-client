@@ -4,7 +4,7 @@ include "client/heart_beat.fbs";
 
 include "entity/entity_despawn.fbs";
 include "entity/entity_movements.fbs";
-include "entity/entity_resource_modify.fbs";
+include "entity/entity_resource_change.fbs";
 include "entity/entity_spawn.fbs";
 include "entity/skill/entity_melee_attack.fbs";
 
@@ -13,7 +13,7 @@ include "player/player_exit_zone.fbs";
 include "player/player_movement.fbs";
 include "player/player_spawn.fbs";
 
-namespace ${packet_namespace};
+namespace tower.network.packet;
 
 union PacketType {
     // client
@@ -23,7 +23,7 @@ union PacketType {
 
     // entity
     EntityDespawn,
-    EntityResourceModify,
+    EntityResourceChange,
     EntityMovements,
     EntitySpawn,
     // entity/skill

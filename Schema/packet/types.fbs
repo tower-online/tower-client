@@ -1,4 +1,4 @@
-namespace ${packet_namespace};
+namespace tower.network.packet;
 
 struct Vector2 {
     x: float32;

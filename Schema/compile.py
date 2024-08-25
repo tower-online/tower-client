@@ -10,10 +10,9 @@ FLATC_URL_WINDOWS = "https://github.com/google/flatbuffers/releases/download/v24
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--output", required=True)
 parser.add_argument("-i", "--input", required=True)
-parser.add_argument("--namespace", type=str, default="tower.net.packet")
 parser.add_argument("--lang", type=str, default="cpp")
-parser.add_argument("--filename-pascalcase", action="store_true")
-parser.add_argument("--download-flatc", action="store_true")
+parser.add_argument("--pascalcase", action="store_true", help="Set filenames and namespace as pascal case")
+parser.add_argument("--download-flatc", action="store_true", help="Download flatc and use it")
 parser.add_argument("--platform", type=str, default="linux")
 # parser.add_argument("files", metavar='N', nargs='+', type=str)
 args = parser.parse_args()
@@ -24,34 +23,37 @@ files = pathlib.Path(args.input).rglob("*.fbs")
 for input_file in files:
     path, filename = os.path.split(input_file)
 
-    filename = filename.replace(".template", "")
-    if args.filename_pascalcase:
+    if args.pascalcase:
         filename = ''.join(word.capitalize() for word in filename.split('_'))
     
     temp_path = os.path.join("temp", path)
     temp_file = os.path.join("temp", path, filename)
 
-    if not os.path.exists(temp_path):
-        os.makedirs(temp_path)
+    os.makedirs(temp_path, exist_ok=True)
 
     with open(input_file, 'r') as src, open(temp_file, 'w') as dst:
         lines = src.readlines()
 
         # Change include file path pascal case
-        if args.filename_pascalcase:
+        if args.pascalcase:
             for i, line in enumerate(lines):
                 m = re.match(r'^include "([^"]*)";', line)
-                if not m:
+                if m:
+                    path, filename = os.path.split(m.group(1))
+                    filename = ''.join(word.capitalize() for word in filename.split('_'))
+
+                    lines[i] = f'include "{os.path.join(path, filename)}";\n'
+                    continue
+                
+                if not args.pascalcase:
                     continue
 
-                path, filename = os.path.split(m.group(1))
-                filename = ''.join(word.capitalize() for word in filename.split('_'))
+                m = re.match(r'^namespace ([^"]*);', line)
+                if m:
+                    pascalcased_namespace = '.'.join(word.capitalize() for word in m.group(1).split('.'))
+                    lines[i] = f''
 
-                lines[i] = f'include "{os.path.join(path, filename)}";\n'
-
-        content = "".join(lines)
-        content = content.replace("${packet_namespace}", args.namespace)
-        dst.write(content)
+        dst.write("".join(lines))
     
     print(f"{input_file} -> {temp_file}")
 
@@ -95,7 +97,7 @@ subprocess.run(flatc_args)
 if args.lang == "csharp":
     import shutil
 
-    for file in pathlib.Path(os.path.join(args.output, *args.namespace.split("."))).glob("*"):
+    for file in pathlib.Path(os.path.join(args.output, *pascalcased_namespace.split("."))).glob("*"):
         target_file = os.path.join(args.output, os.path.basename(file))
         if os.path.exists(target_file):
             os.remove(target_file)

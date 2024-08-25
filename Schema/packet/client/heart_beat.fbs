@@ -1,4 +1,4 @@
-namespace ${packet_namespace};
+namespace tower.network.packet;
 
 table HeartBeat {
 }

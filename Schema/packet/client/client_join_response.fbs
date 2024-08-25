@@ -1,4 +1,4 @@
-namespace ${packet_namespace};
+namespace tower.network.packet;
 
 enum ClientJoinResult : uint8 {
     NONE,
