@@ -1,9 +1,0 @@
-include "types.fbs";
-
-namespace tower.network.packet;
-
-table PlayerMovement {
-    target_direction: Vector2;
-}
-
-root_type PlayerMovement;
