@@ -68,7 +68,7 @@ public partial class EntityManager : Node
     }
 
     private void OnPlayerSpawn(int entityId, int entityType, Vector2 position, float rotation)
-    {
+    {   
         GD.Print($"{nameof(EntityManager)}/{nameof(OnPlayerSpawn)}: {entityId}");
 
         //TODO: Entity Type

@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://cqqp30clvyikr"]
+
+[node name="CharacterSlot" type="VBoxContainer"]
+custom_minimum_size = Vector2(300, 0)
+theme_override_constants/separation = 5
+
+[node name="UsernameLabel" type="Label" parent="."]
+layout_mode = 2
+text = "USERNAME"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="."]
+layout_mode = 2
+text = "LEVEL 123"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StartButton" type="Button" parent="."]
+layout_mode = 2
+text = "START"

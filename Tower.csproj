@@ -4,6 +4,8 @@
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net7.0</TargetFramework>
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'ios' ">net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
+    
+    <DefineConstants>$(DefineConstants);TOWER_PLATFORM_TEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Google.FlatBuffers" Version="24.3.25" />

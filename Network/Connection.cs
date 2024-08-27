@@ -2,16 +2,9 @@ using Godot;
 using Google.FlatBuffers;
 using System;
 using System.Net.Sockets;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Tower.Network.Packet;
-
-// HTTP
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using HttpClient = System.Net.Http.HttpClient;
 
 namespace Tower.Network;
 
@@ -33,13 +26,13 @@ public partial class Connection : Node
     private NetworkStream _stream;
     private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
 
-    public override void _Ready()
+    private void Run()
     {
         _ = Task.Run(async () =>
         {
             const string username = "tester_00001";
 
-            var token = await RequestAuthToken(username);
+            var token = await Auth.RequestToken(username);
             if (token == default) return;
 
             if (!await ConnectAsync("localhost", 30000)) return;
@@ -71,7 +64,6 @@ public partial class Connection : Node
                 }
             });
 
-
             // Send ClientJoinRequest with acquired token
             var builder = new FlatBufferBuilder(512);
             var request =
@@ -82,46 +74,6 @@ public partial class Connection : Node
 
             SendPacket(builder.DataBuffer);
         });
-    }
-
-    public static async Task<string> RequestAuthToken(string username)
-    {
-        const string url = "https://localhost:8000/token/test";
-        var requestData = new Dictionary<string, string>()
-        {
-            ["username"] = username
-        };
-        GD.Print($"[{nameof(Connection)}] Requesting auth token: {url} as username={username}");
-
-        using var handler = new HttpClientHandler();
-        GD.Print("Warning: Allowing self-signed certification for auth server. Remove this in release");
-        handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
-
-        using var client = new HttpClient(handler);
-        try
-        {
-            HttpResponseMessage response = await client.PostAsync(url, new StringContent(
-                JsonSerializer.Serialize(requestData), Encoding.UTF8, "application/json"
-            ));
-            response.EnsureSuccessStatusCode();
-
-            var body = await response.Content.ReadAsStringAsync();
-            var json = JsonDocument.Parse(body).RootElement;
-            if (json.TryGetProperty("jwt", out var jwtElem))
-            {
-                var jwt = jwtElem.GetString();
-                GD.Print($"[{nameof(Connection)}] Requesting auth token succeed: {jwt}");
-                return jwt;
-            }
-
-            GD.PrintErr($"Invalid response body");
-            return default;
-        }
-        catch (HttpRequestException ex)
-        {
-            GD.PrintErr($"Error requesting token: {ex}");
-            return default;
-        }
     }
 
     public async Task<bool> ConnectAsync(string host, int port)
@@ -289,7 +241,7 @@ public partial class Connection : Node
             targetPositions[i] = new Godot.Vector2(targetPosition.X, targetPosition.Y);
         }
 
-        CallDeferred(MethodName.EmitSignal, SignalName.SEntityMovements,
+        CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SEntityMovements,
             entityIds, targetDirections, targetPositions);
     }
 
@@ -318,7 +270,7 @@ public partial class Connection : Node
             rotations[i] = spawn.Rotation;
         }
 
-        CallDeferred(MethodName.EmitSignal, SignalName.SEntitySpawns,
+        CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SEntitySpawns,
             entityIds, entityTypes, positions, rotations);
     }
 
@@ -340,7 +292,7 @@ public partial class Connection : Node
             position.Y = pos.Y;
         }
         
-        CallDeferred(MethodName.EmitSignal, SignalName.SPlayerSpawn, (int)spawn.EntityId, (int)spawn.EntityType, position, spawn.Rotation);
+        CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SPlayerSpawn, (int)spawn.EntityId, (int)spawn.EntityType, position, spawn.Rotation);
     }
 
     #endregion
