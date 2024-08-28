@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Tower.Network.Packet;
+using Tower.System;
 
 namespace Tower.Network;
 
@@ -35,7 +36,7 @@ public partial class Connection : Node
             var token = await Auth.RequestToken(username);
             if (token == default) return;
 
-            if (!await ConnectAsync("localhost", 30000)) return;
+            if (!await ConnectAsync(Settings.RemoteHost, 30000)) return;
 
             // Receiving loop
             _ = Task.Run(async () =>

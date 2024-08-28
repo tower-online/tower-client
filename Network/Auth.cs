@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using HttpClient = System.Net.Http.HttpClient;
+using Tower.System;
 
 namespace Tower.Network;
 
@@ -15,15 +16,15 @@ public static class Auth
     {
         //TODO: optional host and port
 #if TOWER_PLATFORM_TEST
-        const string url = "https://localhost:8000/token/test";
+        var url = $"https://{Settings.RemoteHost}:8000/token/test";
         var requestData = new Dictionary<string, string>
         {
             ["username"] = username
         };
         GD.Print($"[{nameof(Auth)}] Requesting auth token: {url} with username={username}");
 #elif TOWER_PLATFORM_STEAM
-        const string url = "https://localhost:8000/token/steam";
-                var requestData = new Dictionary<string, string>
+        var url = $"https://{Settings.RemoteHost}:8000/token/steam";
+        var requestData = new Dictionary<string, string>
         {
             ["username"] = username,
             //TODO: Add ticket and required keys
@@ -58,14 +59,14 @@ public static class Auth
         }
         catch (HttpRequestException ex)
         {
-            GD.PrintErr($"Error requesting token: {ex}");
+            GD.PrintErr($"Error requesting token: {ex.Message}");
             return default;
         }
     }
 
     public static async Task<List<Tuple<string>>> RequestCharacters(string username, string token)
     {
-        const string url = $"https://localhost:8000/characters";
+        var url = $"https://{Settings.RemoteHost}:8000/characters";
         var requestData = new Dictionary<string, string>
         {
             ["username"] = username,
@@ -76,7 +77,7 @@ public static class Auth
         using var handler = new HttpClientHandler();
         GD.Print("Warning: Allowing self-signed certification for auth server. Remove this in release");
         handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
-        
+
         using var client = new HttpClient(handler);
         string body;
         try
@@ -90,7 +91,7 @@ public static class Auth
         }
         catch (HttpRequestException ex)
         {
-            GD.PrintErr($"Error requesting token: {ex}");
+            GD.PrintErr($"Error requesting token: {ex.Message}");
             return default;
         }
 
@@ -107,7 +108,7 @@ public static class Auth
             {
                 if (!characterElem.TryGetProperty("name", out var characterNameElem)) throw new Exception();
                 var characterName = characterElem.GetString();
-                
+
                 characters.Add(new Tuple<string>(characterName));
             }
         }
