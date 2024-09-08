@@ -5,8 +5,8 @@ namespace Tower.System;
 
 public partial class GameManager : Node
 {
-    public string Username { get; private set; }
-    public string AuthToken { get; set; }
+    public string? Username { get; private set; }
+    public string? AuthToken { get; set; }
 
     public override void _Ready()
     {

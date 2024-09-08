@@ -11,6 +11,8 @@ namespace Tower.Network;
 
 public partial class Connection : Node
 {
+    public event Action<PlayerSpawn>? PlayerSpawnEvent;
+    
     [Signal]
     public delegate void SEntityMovementsEventHandler(
         int[] entityIds, Godot.Vector2[] targetDirections, Godot.Vector2[] targetPositions);
@@ -19,23 +21,14 @@ public partial class Connection : Node
     public delegate void SEntitySpawnsEventHandler(
         int[] entityIds, int[] entityTypes, Godot.Vector2[] positions, float[] rotations);
 
-    [Signal]
-    public delegate void SPlayerSpawnEventHandler(
-        int entityId, int entityType, Godot.Vector2 position, float rotation);
-
     private readonly TcpClient _client = new TcpClient();
-    private NetworkStream _stream;
+    private NetworkStream? _stream;
     private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
 
     private void Run()
     {
         _ = Task.Run(async () =>
         {
-            const string username = "tester_00001";
-
-            var token = await Auth.RequestToken(username);
-            if (token == default) return;
-
             if (!await ConnectAsync(Settings.RemoteHost, 30000)) return;
 
             // Receiving loop
@@ -56,7 +49,7 @@ public partial class Connection : Node
                     var buffer = await _sendBufferBlock.ReceiveAsync();
                     try
                     {
-                        await _stream.WriteAsync(buffer.ToSizedArray());
+                        await _stream!.WriteAsync(buffer.ToSizedArray());
                     }
                     catch (Exception)
                     {
@@ -64,16 +57,6 @@ public partial class Connection : Node
                     }
                 }
             });
-
-            // Send ClientJoinRequest with acquired token
-            var builder = new FlatBufferBuilder(512);
-            var request =
-                ClientJoinRequest.CreateClientJoinRequest(builder,
-                    ClientPlatform.TEST, builder.CreateString(username), builder.CreateString(token));
-            var packetBase = PacketBase.CreatePacketBase(builder, PacketType.ClientJoinRequest, request.Value);
-            builder.FinishSizePrefixed(packetBase.Value);
-
-            SendPacket(builder.DataBuffer);
         });
     }
 
@@ -122,7 +105,7 @@ public partial class Connection : Node
         try
         {
             var headerBuffer = new byte[FlatBufferConstants.SizePrefixLength];
-            await _stream.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length);
+            await _stream!.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length);
 
             var bodyBuffer = new byte[ByteBufferUtil.GetSizePrefix(new ByteBuffer(headerBuffer))];
             await _stream.ReadExactlyAsync(bodyBuffer, 0, bodyBuffer.Length);
@@ -173,11 +156,7 @@ public partial class Connection : Node
                 break;
 
             case PacketType.PlayerSpawn:
-                HandlePlayerSpawn(packetBase.PacketBase_AsPlayerSpawn());
-                break;
-
-            case PacketType.ClientJoinResponse:
-                HandleClientJoinResponse(packetBase.PacketBase_AsClientJoinResponse());
+                PlayerSpawnEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawn());
                 break;
 
             case PacketType.HeartBeat:
@@ -200,20 +179,6 @@ public partial class Connection : Node
         SendPacket(builder.DataBuffer);
     }
 
-    private void HandleClientJoinResponse(ClientJoinResponse response)
-    {
-        if (response.Result != ClientJoinResult.OK)
-        {
-            GD.PrintErr($"[{nameof(Connection)}] [ClientJoinResponse] Failed");
-
-            //TODO: Signal fail or retry?
-            Disconnect();
-            return;
-        }
-
-        GD.Print($"[{nameof(Connection)}] [ClientJoinResponse] OK");
-    }
-
     #endregion
 
     #region Entity Packet Handlers
@@ -227,13 +192,14 @@ public partial class Connection : Node
 
         for (var i = 0; i < length; i++)
         {
-            if (!movements.Movements(i).HasValue)
+            var movementBase = movements.Movements(i);
+            if (!movementBase.HasValue)
             {
                 GD.PrintErr($"[{nameof(Connection)}] [{nameof(HandleEntityMovements)}] Invalid array");
                 return;
             }
 
-            var movement = movements.Movements(i).Value;
+            var movement = movementBase.Value;
             var targetDirection = movement.TargetDirection;
             var targetPosition = movement.TargetPosition;
 
@@ -256,13 +222,14 @@ public partial class Connection : Node
 
         for (var i = 0; i < length; i++)
         {
-            if (!spawns.Spawns(i).HasValue)
+            var spawnBase = spawns.Spawns(i);
+            if (!spawnBase.HasValue)
             {
                 GD.PrintErr($"[{nameof(Connection)}] [{nameof(HandleEntitySpawns)}] Invalid array");
                 return;
             }
 
-            var spawn = spawns.Spawns(i).Value;
+            var spawn = spawnBase.Value;
             var position = spawn.Position;
 
             entityIds[i] = (int)spawn.EntityId;
@@ -285,15 +252,15 @@ public partial class Connection : Node
 
     private void HandlePlayerSpawn(PlayerSpawn spawn)
     {
-        var position = new Godot.Vector2();
-        if (spawn.Position.HasValue)
-        {
-            var pos = spawn.Position.Value;
-            position.X = pos.X;
-            position.Y = pos.Y;
-        }
-        
-        CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SPlayerSpawn, (int)spawn.EntityId, (int)spawn.EntityType, position, spawn.Rotation);
+        // var position = new Godot.Vector2();
+        // if (spawn.Position.HasValue)
+        // {
+        //     var pos = spawn.Position.Value;
+        //     position.X = pos.X;
+        //     position.Y = pos.Y;
+        // }
+        //
+        // CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SPlayerSpawn, (int)spawn.EntityId, (int)spawn.EntityType, position, spawn.Rotation);
     }
 
     #endregion

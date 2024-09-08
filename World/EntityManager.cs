@@ -12,9 +12,9 @@ namespace Tower.World;
 
 public partial class EntityManager : Node
 {
-    private Connection _connectionManager;
+    private Connection? _connectionManager;
     private readonly Dictionary<int, Entity> _entities = new();
-    private Player _player;
+    private Player? _player;
     
     private readonly PackedScene _playerScene = GD.Load<PackedScene>("res://Players/Player.tscn");
     private readonly PackedScene _mainCameraScene = GD.Load<PackedScene>("res://Players/MainCamera.tscn");
@@ -22,9 +22,12 @@ public partial class EntityManager : Node
     public override void _Ready()
     {
         _connectionManager = GetNode<Connection>("/root/ConnectionManager");
-        _connectionManager.SEntityMovements += OnEntityMovements;
-        _connectionManager.SEntitySpawns += OnEntitySpawns;
-        _connectionManager.SPlayerSpawn += OnPlayerSpawn;
+
+        _connectionManager.PlayerSpawnEvent += OnPlayerSpawn;
+
+
+        // _connectionManager.SEntityMovements += OnEntityMovements;
+        // _connectionManager.SEntitySpawns += OnEntitySpawns;
     }
 
     public override void _Process(double delta)
@@ -49,7 +52,7 @@ public partial class EntityManager : Node
             Entity entity;
             switch ((EntityType)entityTypes[i])
             {
-                case EntityType.PLAYER_HUMAN:
+                case EntityType.HUMAN:
                     entity = (Player)_playerScene.Instantiate();
                     break;
                 
@@ -67,24 +70,26 @@ public partial class EntityManager : Node
         }
     }
 
-    private void OnPlayerSpawn(int entityId, int entityType, Vector2 position, float rotation)
-    {   
-        GD.Print($"{nameof(EntityManager)}/{nameof(OnPlayerSpawn)}: {entityId}");
+    private void OnPlayerSpawn(PlayerSpawn spawn)
+    {
+        _player = _playerScene.Instantiate<Player>();
 
-        //TODO: Entity Type
-        var player = (Player)_playerScene.Instantiate();
-        player!.IsMaster = true;
-        player.EntityId = entityId;
-        player.Position = new Vector3(position.X, 0, position.Y);
-        // player!.Rotation =
-
-        player.SPlayerMovement += _connectionManager.HandlePlayerMovement;
-
-        _entities[player.EntityId] = player;
-        AddSibling(player);
-
-        var mainCamera = _mainCameraScene.Instantiate();
-        mainCamera.Set("target", (Node3D)player);
-        AddSibling(mainCamera);
+        // GD.Print($"{nameof(EntityManager)}/{nameof(OnPlayerSpawn)}: {entityId}");
+        //
+        // //TODO: Entity Type
+        // var player = (Player)_playerScene.Instantiate();
+        // player!.IsMaster = true;
+        // player.EntityId = entityId;
+        // player.Position = new Vector3(position.X, 0, position.Y);
+        // // player!.Rotation =
+        //
+        // player.SPlayerMovement += _connectionManager.HandlePlayerMovement;
+        //
+        // _entities[player.EntityId] = player;
+        // AddSibling(player);
+        //
+        // var mainCamera = _mainCameraScene.Instantiate();
+        // mainCamera.Set("target", (Node3D)player);
+        // AddSibling(mainCamera);
     }
 }

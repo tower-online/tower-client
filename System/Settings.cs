@@ -15,6 +15,6 @@ public static class Settings
         var deserializer = new Deserializer();
 
         var settings = deserializer.Deserialize<Dictionary<string, object>>(content);
-        RemoteHost = settings["remote_host"] as string;
+        RemoteHost = (string)settings["remote_host"];
     }
 }

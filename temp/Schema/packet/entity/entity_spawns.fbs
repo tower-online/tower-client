@@ -1,0 +1,16 @@
+include "entity_types.fbs";
+
+namespace Tower.Network.Packet;
+
+struct EntitySpawn {
+    entity_type: EntityType;
+    entity_id: uint32;
+    position: Vector2;
+    rotation: float32;
+}
+
+table EntitySpawns {
+    spawns: [EntitySpawn];
+}
+
+root_type EntitySpawns;

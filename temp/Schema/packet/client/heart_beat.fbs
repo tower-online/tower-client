@@ -1,0 +1,6 @@
+namespace Tower.Network.Packet;
+
+table HeartBeat {
+}
+
+root_type HeartBeat;

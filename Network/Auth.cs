@@ -12,7 +12,7 @@ namespace Tower.Network;
 
 public static class Auth
 {
-    public static async Task<string> RequestToken(string username)
+    public static async Task<string?> RequestToken(string username)
     {
         //TODO: optional host and port
 #if TOWER_PLATFORM_TEST
@@ -55,23 +55,33 @@ public static class Auth
             }
 
             GD.PrintErr($"Invalid response body");
-            return default;
+            return null;
         }
         catch (HttpRequestException ex)
         {
             GD.PrintErr($"Error requesting token: {ex.Message}");
-            return default;
+            return null;
         }
     }
 
-    public static async Task<List<Tuple<string>>> RequestCharacters(string username, string token)
+    public static async Task<List<Tuple<string>>?> RequestCharacters(string username, string token)
     {
         var url = $"https://{Settings.RemoteHost}:8000/characters";
+#if TOWER_PLATFORM_TEST
         var requestData = new Dictionary<string, string>
         {
+            ["platform"] = "TEST",
             ["username"] = username,
-            ["token"] = token
+            ["jwt"] = token
         };
+#elif TOWER_PLATFORM_STEAM
+        var requestData = new Dictionary<string, string>
+        {
+            ["platform"] = "STEAM"
+            ["username"] = username,
+            ["jwt"] = token
+        };
+#endif
         GD.Print($"[{nameof(Auth)}] Requesting characters: {url} with username={username} token={token}");
 
         using var handler = new HttpClientHandler();
@@ -91,7 +101,7 @@ public static class Auth
         }
         catch (HttpRequestException ex)
         {
-            GD.PrintErr($"Error requesting token: {ex.Message}");
+            GD.PrintErr($"Error requesting characters: {ex.Message}");
             return default;
         }
 
@@ -107,7 +117,7 @@ public static class Auth
             foreach (var characterElem in charactersElem.EnumerateArray())
             {
                 if (!characterElem.TryGetProperty("name", out var characterNameElem)) throw new Exception();
-                var characterName = characterElem.GetString();
+                var characterName = characterElem.GetString()!;
 
                 characters.Add(new Tuple<string>(characterName));
             }

@@ -16,7 +16,7 @@ public partial class Player : Entity
 	private readonly TimeSpan _movementTickInterval = TimeSpan.FromMilliseconds(50);
 	private DateTime _lastMovementTick = DateTime.Now;
 
-	private AnimationTree _animationTree;
+	private AnimationTree? _animationTree;
 	private double _runBlend;
 	private static readonly StringName RunBlendParameter = "parameters/run_blend/blend_amount";
 	
@@ -52,6 +52,6 @@ public partial class Player : Entity
 			_runBlend = Mathf.Lerp(_runBlend, 0.0, blendSpeed * delta);
 		}
 
-		_animationTree.Set(RunBlendParameter, _runBlend);
+		_animationTree?.Set(RunBlendParameter, _runBlend);
 	}
 }
