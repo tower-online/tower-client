@@ -7,6 +7,7 @@ namespace Tower.System;
 public static class Settings
 {
     public static string RemoteHost { get; }
+    public static ushort RemoteAuthPort { get; }
     
     static Settings()
     {
@@ -14,7 +15,8 @@ public static class Settings
         var content = file.GetAsText();
         var deserializer = new Deserializer();
 
-        var settings = deserializer.Deserialize<Dictionary<string, object>>(content);
-        RemoteHost = (string)settings["remote_host"];
+        var settings = deserializer.Deserialize<Dictionary<string, string>>(content);
+        RemoteHost = settings["remote_host"];
+        RemoteAuthPort = ushort.Parse(settings["remote_auth_port"]);
     }
 }

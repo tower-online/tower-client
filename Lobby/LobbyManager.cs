@@ -39,9 +39,9 @@ public partial class LobbyManager : Node
         //TODO
 #endif
         if (token is null) return;
-        _gameManager.AuthToken = token;
+        // _gameManager.AuthToken = token;
 
-        var characters = await Auth.RequestCharacters(_gameManager.Username, _gameManager.AuthToken);
+        var characters = await Auth.RequestCharacters(_gameManager.Username, token);
         if (characters is null) return;
         GD.Print($"Got {characters.Count} characters");
 

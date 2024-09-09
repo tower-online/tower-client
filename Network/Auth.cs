@@ -14,16 +14,15 @@ public static class Auth
 {
     public static async Task<string?> RequestToken(string username)
     {
-        //TODO: optional host and port
 #if TOWER_PLATFORM_TEST
-        var url = $"https://{Settings.RemoteHost}:8000/token/test";
+        var url = $"https://{Settings.RemoteHost}:{Settings.RemoteAuthPort}/token/test";
         var requestData = new Dictionary<string, string>
         {
             ["username"] = username
         };
         GD.Print($"[{nameof(Auth)}] Requesting auth token: {url} with username={username}");
 #elif TOWER_PLATFORM_STEAM
-        var url = $"https://{Settings.RemoteHost}:8000/token/steam";
+        var url = $"https://{Settings.RemoteHost}:{Settings.RemoteAuthPort}/token/steam";
         var requestData = new Dictionary<string, string>
         {
             ["username"] = username,
@@ -46,27 +45,26 @@ public static class Auth
             response.EnsureSuccessStatusCode();
 
             var body = await response.Content.ReadAsStringAsync();
-            var json = JsonDocument.Parse(body).RootElement;
-            if (json.TryGetProperty("jwt", out var jwtElem))
-            {
-                var jwt = jwtElem.GetString();
-                // GD.Print($"[{nameof(Connection)}] Requesting auth token succeed: {jwt}");
-                return jwt;
-            }
-
-            GD.PrintErr($"Invalid response body");
-            return null;
+            var root = JsonDocument.Parse(body).RootElement;
+            
+            var jwtElem = root.GetProperty("jwt");
+            return jwtElem.GetString();
         }
         catch (HttpRequestException ex)
         {
             GD.PrintErr($"Error requesting token: {ex.Message}");
             return null;
         }
+        catch (Exception)
+        {
+            GD.PrintErr("Invalid JSON");
+            return null;
+        }
     }
 
-    public static async Task<List<Tuple<string>>?> RequestCharacters(string username, string token)
+    public static async Task<List<string>?> RequestCharacters(string username, string token)
     {
-        var url = $"https://{Settings.RemoteHost}:8000/characters";
+        var url = $"https://{Settings.RemoteHost}:{Settings.RemoteAuthPort}/characters";
 #if TOWER_PLATFORM_TEST
         var requestData = new Dictionary<string, string>
         {
@@ -84,8 +82,8 @@ public static class Auth
 #endif
         GD.Print($"[{nameof(Auth)}] Requesting characters: {url} with username={username} token={token}");
 
-        using var handler = new HttpClientHandler();
         GD.Print("Warning: Allowing self-signed certification for auth server. Remove this in release");
+        using var handler = new HttpClientHandler();
         handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
 
         using var client = new HttpClient(handler);
@@ -102,10 +100,10 @@ public static class Auth
         catch (HttpRequestException ex)
         {
             GD.PrintErr($"Error requesting characters: {ex.Message}");
-            return default;
+            return null;
         }
 
-        List<Tuple<string>> characters = [];
+        List<string> characters = [];
         try
         {
             if (!JsonDocument.Parse(body).RootElement.TryGetProperty("characters", out var charactersElem))
@@ -116,10 +114,7 @@ public static class Auth
 
             foreach (var characterElem in charactersElem.EnumerateArray())
             {
-                if (!characterElem.TryGetProperty("name", out var characterNameElem)) throw new Exception();
-                var characterName = characterElem.GetString()!;
-
-                characters.Add(new Tuple<string>(characterName));
+                characters.Add(characterElem.GetProperty("name").GetString()!);
             }
         }
         catch (Exception)

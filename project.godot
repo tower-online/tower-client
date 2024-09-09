@@ -23,7 +23,7 @@ EntityManager="*res://World/EntityManager.cs"
 
 [dotnet]
 
-project/assembly_name="Tower"
+project/assembly_name="TowerClient"
 
 [input]
 
