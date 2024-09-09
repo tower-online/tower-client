@@ -12,7 +12,7 @@ grow_vertical = 2
 mouse_filter = 1
 script = ExtResource("1_lpgs7")
 
-[node name="Characters" type="HBoxContainer" parent="."]
+[node name="CharacterSlots" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 14
 anchor_top = 0.5
@@ -22,18 +22,18 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 10
 
-[node name="CharacterRegister" type="VBoxContainer" parent="Characters"]
+[node name="CharacterRegister" type="VBoxContainer" parent="CharacterSlots"]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="UsernameHolder" type="LineEdit" parent="Characters/CharacterRegister"]
+[node name="UsernameHolder" type="LineEdit" parent="CharacterSlots/CharacterRegister"]
 layout_mode = 2
 size_flags_vertical = 4
 placeholder_text = "Username"
 alignment = 1
 max_length = 30
 
-[node name="RegisterButton" type="Button" parent="Characters/CharacterRegister"]
+[node name="RegisterButton" type="Button" parent="CharacterSlots/CharacterRegister"]
 layout_mode = 2
 text = "REGISTER"

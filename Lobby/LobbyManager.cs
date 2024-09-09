@@ -1,5 +1,6 @@
-using Godot;
 using System;
+using Godot;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Tower.Network;
 using Tower.System;
@@ -12,9 +13,9 @@ public partial class LobbyManager : Node
     private GameManager? _gameManager;
 
     [Signal]
-    public delegate void SUpdateCharacterSlotsEventHandler();
+    public delegate void SUpdateCharacterSlotsEventHandler(UpdateCharacterSlotsEventArgs args);
 
-    private Control? _charactersContainer;
+    private Control? _characterSlots;
     private readonly PackedScene _characterSlotScene = GD.Load<PackedScene>("res://Lobby/CharacterSlot.tscn");
 
     public override void _Ready()
@@ -22,7 +23,7 @@ public partial class LobbyManager : Node
         _connectionManager = GetNode<Connection>("/root/ConnectionManager");
         _gameManager = GetNode<GameManager>("/root/GameManager");
 
-        _charactersContainer = GetNode<Control>("Characters");
+        _characterSlots = GetNode<Control>("CharacterSlots");
 
         SUpdateCharacterSlots += OnUpdateCharacterSlots;
 
@@ -32,7 +33,7 @@ public partial class LobbyManager : Node
     private async void UpdateCharacterSlots()
     {
         if (_gameManager!.Username is null) return;
-        
+
 #if TOWER_PLATFORM_TEST
         var token = await Auth.RequestToken(_gameManager.Username);
 #elif TOWER_PLATFORM_STEAM
@@ -45,11 +46,22 @@ public partial class LobbyManager : Node
         if (characters is null) return;
         GD.Print($"Got {characters.Count} characters");
 
-        // CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SUpdateCharacterSlots, );
+        CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SUpdateCharacterSlots,
+            new UpdateCharacterSlotsEventArgs(characters));
     }
 
-    private void OnUpdateCharacterSlots()
+    private void OnUpdateCharacterSlots(UpdateCharacterSlotsEventArgs args)
     {
+        foreach (var character in args.Characters)
+        {
+            var slot = _characterSlotScene.Instantiate<Control>();
+            _characterSlots!.AddChild(slot);
+
+            slot.GetNode<Label>("Username").Text = character;
+        }
+        
+        
+        
         // Send ClientJoinRequest with acquired token
         // var builder = new FlatBufferBuilder(512);
         // var request =
@@ -61,4 +73,9 @@ public partial class LobbyManager : Node
         //
         // SendPacket(builder.DataBuffer);
     }
+}
+
+public partial class UpdateCharacterSlotsEventArgs(List<string> characters) : GodotObject
+{
+    public List<string> Characters { get; } = characters;
 }

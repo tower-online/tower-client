@@ -4,15 +4,15 @@
 custom_minimum_size = Vector2(300, 0)
 theme_override_constants/separation = 5
 
-[node name="UsernameLabel" type="Label" parent="."]
+[node name="Username" type="Label" parent="."]
 layout_mode = 2
 text = "USERNAME"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LevelLabel" type="Label" parent="."]
+[node name="Level" type="Label" parent="."]
 layout_mode = 2
-text = "LEVEL 123"
+text = "LEVEL ???"
 horizontal_alignment = 1
 vertical_alignment = 1
 
