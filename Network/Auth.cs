@@ -12,7 +12,7 @@ namespace Tower.Network;
 
 public static class Auth
 {
-    public static async Task<string?> RequestToken(string username)
+    public static async Task<string> RequestToken(string username)
     {
 #if TOWER_PLATFORM_TEST
         var url = $"https://{Settings.RemoteHost}:{Settings.RemoteAuthPort}/token/test";
@@ -62,7 +62,7 @@ public static class Auth
         }
     }
 
-    public static async Task<List<string>?> RequestCharacters(string username, string token)
+    public static async Task<List<string>> RequestCharacters(string username, string token)
     {
         var url = $"https://{Settings.RemoteHost}:{Settings.RemoteAuthPort}/characters";
 #if TOWER_PLATFORM_TEST

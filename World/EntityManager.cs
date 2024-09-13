@@ -12,9 +12,9 @@ namespace Tower.World;
 
 public partial class EntityManager : Node
 {
-    private Connection? _connectionManager;
+    private Connection _connectionManager;
     private readonly Dictionary<int, Entity> _entities = new();
-    private Player? _player;
+    private Player _player;
     
     private readonly PackedScene _playerScene = GD.Load<PackedScene>("res://Players/Player.tscn");
     private readonly PackedScene _mainCameraScene = GD.Load<PackedScene>("res://Players/MainCamera.tscn");

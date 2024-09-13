@@ -1,21 +1,23 @@
-using System;
 using Godot;
+using Google.FlatBuffers;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Tower.Network;
+using Tower.Network.Packet;
 using Tower.System;
 
 namespace Tower.Lobby;
 
 public partial class LobbyManager : Node
 {
-    private Connection? _connectionManager;
-    private GameManager? _gameManager;
+    private Connection _connectionManager;
+    private GameManager _gameManager;
 
     [Signal]
     public delegate void SUpdateCharacterSlotsEventHandler(UpdateCharacterSlotsEventArgs args);
 
-    private Control? _characterSlots;
+    private Control _characterSlots;
     private readonly PackedScene _characterSlotScene = GD.Load<PackedScene>("res://Lobby/CharacterSlot.tscn");
 
     public override void _Ready()
@@ -40,7 +42,7 @@ public partial class LobbyManager : Node
         //TODO
 #endif
         if (token is null) return;
-        // _gameManager.AuthToken = token;
+        _gameManager.AuthToken = token;
 
         var characters = await Auth.RequestCharacters(_gameManager.Username, token);
         if (characters is null) return;
@@ -52,26 +54,39 @@ public partial class LobbyManager : Node
 
     private void OnUpdateCharacterSlots(UpdateCharacterSlotsEventArgs args)
     {
-        foreach (var character in args.Characters)
+        foreach (var characterName in args.Characters)
         {
-            var slot = _characterSlotScene.Instantiate<Control>();
+            var slot = _characterSlotScene.Instantiate<CharacterSlot>();
             _characterSlots!.AddChild(slot);
 
-            slot.GetNode<Label>("Username").Text = character;
+            slot.CharacterName.Text = characterName;
+            slot.StartButtonPressed += HandleCharacterStart;
         }
-        
-        
-        
-        // Send ClientJoinRequest with acquired token
-        // var builder = new FlatBufferBuilder(512);
-        // var request =
-        //     ClientJoinRequest.CreateClientJoinRequest(builder,
-        //         builder.CreateString(Username),
-        //         ClientPlatform.TEST, builder.CreateString(), builder.CreateString(token));
-        // var packetBase = PacketBase.CreatePacketBase(builder, PacketType.ClientJoinRequest, request.Value);
-        // builder.FinishSizePrefixed(packetBase.Value);
-        //
-        // SendPacket(builder.DataBuffer);
+    }
+
+    private void HandleCharacterStart(string characterName)
+    {
+        // Send ClientJoinRequest
+        var builder = new FlatBufferBuilder(512);
+        var request = ClientJoinRequest.CreateClientJoinRequest(builder,
+            builder.CreateString(_gameManager.Username),
+            builder.CreateString(characterName),
+            builder.CreateString(_gameManager.AuthToken));
+        var packetBase = PacketBase.CreatePacketBase(builder, PacketType.ClientJoinRequest, request.Value);
+        builder.FinishSizePrefixed(packetBase.Value);
+
+        if (!_connectionManager.IsClientConnected)
+        {
+            _ = Task.Run(async () =>
+            {
+                if (!await _connectionManager.ConnectAsync(Settings.RemoteHost, Settings.RemoteMainPort)) return;
+                _connectionManager.SendPacket(builder.DataBuffer);
+            });
+        }
+        else
+        {
+            _connectionManager.SendPacket(builder.DataBuffer);
+        }
     }
 }
 

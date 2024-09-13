@@ -11,7 +11,7 @@ namespace Tower.Network;
 
 public partial class Connection : Node
 {
-    public event Action<PlayerSpawn>? PlayerSpawnEvent;
+    public event Action<PlayerSpawn> PlayerSpawnEvent;
     
     [Signal]
     public delegate void SEntityMovementsEventHandler(
@@ -21,66 +21,69 @@ public partial class Connection : Node
     public delegate void SEntitySpawnsEventHandler(
         int[] entityIds, int[] entityTypes, Godot.Vector2[] positions, float[] rotations);
 
-    private readonly TcpClient _client = new TcpClient();
-    private NetworkStream? _stream;
+    [Signal]
+    public delegate void SClientJoinRequestEventHandler(ClientJoinResponseEventArgs args);
+
+    private TcpClient _client;
+    private NetworkStream _stream;
     private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
+    private bool _isConnecting = false;
 
-    private void Run()
-    {
-        _ = Task.Run(async () =>
-        {
-            if (!await ConnectAsync(Settings.RemoteHost, 30000)) return;
-
-            // Receiving loop
-            _ = Task.Run(async () =>
-            {
-                while (_client.Connected)
-                {
-                    var buffer = await ReceivePacketAsync();
-                    HandlePacket(buffer);
-                }
-            });
-
-            // Sending loop
-            _ = Task.Run(async () =>
-            {
-                while (_client.Connected)
-                {
-                    var buffer = await _sendBufferBlock.ReceiveAsync();
-                    try
-                    {
-                        await _stream!.WriteAsync(buffer.ToSizedArray());
-                    }
-                    catch (Exception)
-                    {
-                        Disconnect();
-                    }
-                }
-            });
-        });
-    }
+    public bool IsClientConnected => _client?.Connected ?? false;
 
     public async Task<bool> ConnectAsync(string host, int port)
     {
+        if (_isConnecting) return false;
+        _isConnecting = true;
+        
         GD.Print($"[{nameof(Connection)}] Connecting to {host}:{port}...");
         try
         {
+            _client = new TcpClient();
             await _client.ConnectAsync(host, port);
             _stream = _client.GetStream();
             _client.NoDelay = true;
-
-            return true;
         }
         catch (ArgumentOutOfRangeException)
         {
             GD.PrintErr($"[{nameof(Connection)}] port out of range: {port}");
+            return false;
         }
         catch (Exception ex)
         {
             GD.PrintErr($"[{nameof(Connection)}] Error connecting: {ex}");
+            return false;
         }
+        
+        // Receiving loop
+        _ = Task.Run(async () =>
+        {
+            while (_client.Connected)
+            {
+                var buffer = await ReceivePacketAsync();
+                HandlePacket(buffer);
+            }
+        });
 
-        return false;
+        // Sending loop
+        _ = Task.Run(async () =>
+        {
+            while (_client.Connected)
+            {
+                var buffer = await _sendBufferBlock.ReceiveAsync();
+                try
+                {
+                    await _stream!.WriteAsync(buffer.ToSizedArray());
+                }
+                catch (Exception)
+                {
+                    Disconnect();
+                }
+            }
+        });
+
+        _isConnecting = false;
+        return true;
     }
 
     public void Disconnect()
@@ -90,6 +93,9 @@ public partial class Connection : Node
         GD.Print($"[{nameof(Connection)}] Disconnecting...");
         _stream?.Close();
         _client?.Close();
+        
+        _stream?.Dispose();
+        _stream?.Dispose();
     }
 
     public override void _ExitTree()
@@ -124,7 +130,7 @@ public partial class Connection : Node
         return new ByteBuffer(0);
     }
 
-    private void SendPacket(ByteBuffer buffer)
+    public void SendPacket(ByteBuffer buffer)
     {
         if (!_client.Connected) return;
 
@@ -157,6 +163,11 @@ public partial class Connection : Node
 
             case PacketType.PlayerSpawn:
                 PlayerSpawnEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawn());
+                break;
+            
+            case PacketType.ClientJoinResponse:
+                CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SClientJoinRequest,
+                    new ClientJoinResponseEventArgs(packetBase.PacketBase_AsClientJoinResponse()));
                 break;
 
             case PacketType.HeartBeat:
@@ -281,4 +292,9 @@ public partial class Connection : Node
     }
 
     #endregion
+}
+
+public partial class ClientJoinResponseEventArgs(ClientJoinResponse response) : GodotObject
+{
+    public ClientJoinResponse Response { get; } = response;
 }

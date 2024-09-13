@@ -6,10 +6,10 @@ namespace Tower.System;
 [GlobalClass]
 public sealed partial class StateMachine : Node
 {
-    private State? _currentState;
+    private State _currentState;
     private readonly Dictionary<StringName, State> _states = new();
 
-    [Export] private State? InitialState { get; set; }
+    [Export] private State InitialState { get; set; }
 
     public override void _Ready()
     {

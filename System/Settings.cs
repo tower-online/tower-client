@@ -8,6 +8,7 @@ public static class Settings
 {
     public static string RemoteHost { get; }
     public static ushort RemoteAuthPort { get; }
+    public static ushort RemoteMainPort { get; }
     
     static Settings()
     {
@@ -18,5 +19,6 @@ public static class Settings
         var settings = deserializer.Deserialize<Dictionary<string, string>>(content);
         RemoteHost = settings["remote_host"];
         RemoteAuthPort = ushort.Parse(settings["remote_auth_port"]);
+        RemoteMainPort = ushort.Parse(settings["remote_main_port"]);
     }
 }
