@@ -22,7 +22,10 @@ public partial class Connection : Node
         int[] entityIds, int[] entityTypes, Godot.Vector2[] positions, float[] rotations);
 
     [Signal]
-    public delegate void SClientJoinRequestEventHandler(ClientJoinResponseEventArgs args);
+    public delegate void SClientJoinResponseEventHandler(ClientJoinResponseEventArgs args);
+
+    [Signal]
+    public delegate void SPlayerEnterZoneResponseEventHandler(PlayerEnterZoneResponseEventArgs args);
 
     private TcpClient _client;
     private NetworkStream _stream;
@@ -150,23 +153,28 @@ public partial class Connection : Node
         switch (packetBase.PacketBaseType)
         {
             case PacketType.EntityMovements:
-                HandleEntityMovements(packetBase.PacketBase_AsEntityMovements());
+                // HandleEntityMovements(packetBase.PacketBase_AsEntityMovements());
                 break;
 
             case PacketType.EntitySpawns:
-                HandleEntitySpawns(packetBase.PacketBase_AsEntitySpawns());
+                // HandleEntitySpawns(packetBase.PacketBase_AsEntitySpawns());
                 break;
 
             case PacketType.EntityDespawn:
-                HandleEntityDespawn(packetBase.PacketBase_AsEntityDespawn());
+                // HandleEntityDespawn(packetBase.PacketBase_AsEntityDespawn());
                 break;
 
             case PacketType.PlayerSpawn:
                 PlayerSpawnEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawn());
                 break;
             
+            case PacketType.PlayerEnterZoneResponse:
+                CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SPlayerEnterZoneResponse,
+                    new PlayerEnterZoneResponseEventArgs(packetBase.PacketBase_AsPlayerEnterZoneResponse()));
+                break;
+            
             case PacketType.ClientJoinResponse:
-                CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SClientJoinRequest,
+                CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SClientJoinResponse,
                     new ClientJoinResponseEventArgs(packetBase.PacketBase_AsClientJoinResponse()));
                 break;
 
@@ -175,8 +183,6 @@ public partial class Connection : Node
                 break;
         }
     }
-
-    #region Client Packet Handlers
 
     private void HandleHeartBeat()
     {
@@ -190,94 +196,6 @@ public partial class Connection : Node
         SendPacket(builder.DataBuffer);
     }
 
-    #endregion
-
-    #region Entity Packet Handlers
-
-    private void HandleEntityMovements(EntityMovements movements)
-    {
-        var length = movements.MovementsLength;
-        var entityIds = new int[length];
-        var targetDirections = new Godot.Vector2[length];
-        var targetPositions = new Godot.Vector2[length];
-
-        for (var i = 0; i < length; i++)
-        {
-            var movementBase = movements.Movements(i);
-            if (!movementBase.HasValue)
-            {
-                GD.PrintErr($"[{nameof(Connection)}] [{nameof(HandleEntityMovements)}] Invalid array");
-                return;
-            }
-
-            var movement = movementBase.Value;
-            var targetDirection = movement.TargetDirection;
-            var targetPosition = movement.TargetPosition;
-
-            entityIds[i] = (int)movement.EntityId;
-            targetDirections[i] = new Godot.Vector2(targetDirection.X, targetDirection.Y);
-            targetPositions[i] = new Godot.Vector2(targetPosition.X, targetPosition.Y);
-        }
-
-        CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SEntityMovements,
-            entityIds, targetDirections, targetPositions);
-    }
-
-    private void HandleEntitySpawns(EntitySpawns spawns)
-    {
-        var length = spawns.SpawnsLength;
-        var entityIds = new int[length];
-        var entityTypes = new int[length];
-        var positions = new Godot.Vector2[length];
-        var rotations = new float[length];
-
-        for (var i = 0; i < length; i++)
-        {
-            var spawnBase = spawns.Spawns(i);
-            if (!spawnBase.HasValue)
-            {
-                GD.PrintErr($"[{nameof(Connection)}] [{nameof(HandleEntitySpawns)}] Invalid array");
-                return;
-            }
-
-            var spawn = spawnBase.Value;
-            var position = spawn.Position;
-
-            entityIds[i] = (int)spawn.EntityId;
-            entityTypes[i] = (int)spawn.EntityType;
-            positions[i] = new Godot.Vector2(position.X, position.Y);
-            rotations[i] = spawn.Rotation;
-        }
-
-        CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SEntitySpawns,
-            entityIds, entityTypes, positions, rotations);
-    }
-
-    private void HandleEntityDespawn(EntityDespawn despawn)
-    {
-    }
-
-    #endregion
-
-    #region Player Packet Handlers
-
-    private void HandlePlayerSpawn(PlayerSpawn spawn)
-    {
-        // var position = new Godot.Vector2();
-        // if (spawn.Position.HasValue)
-        // {
-        //     var pos = spawn.Position.Value;
-        //     position.X = pos.X;
-        //     position.Y = pos.Y;
-        // }
-        //
-        // CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SPlayerSpawn, (int)spawn.EntityId, (int)spawn.EntityType, position, spawn.Rotation);
-    }
-
-    #endregion
-
-    #region Player Action Handlers
-
     public void HandlePlayerMovement(Godot.Vector2 targetDirection)
     {
         var builder = new FlatBufferBuilder(128);
@@ -290,11 +208,14 @@ public partial class Connection : Node
 
         SendPacket(builder.DataBuffer);
     }
-
-    #endregion
 }
 
 public partial class ClientJoinResponseEventArgs(ClientJoinResponse response) : GodotObject
 {
     public ClientJoinResponse Response { get; } = response;
+}
+
+public partial class PlayerEnterZoneResponseEventArgs(PlayerEnterZoneResponse response) : GodotObject
+{
+    public PlayerEnterZoneResponse Response { get; } = response;
 }

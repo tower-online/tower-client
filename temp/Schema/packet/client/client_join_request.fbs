@@ -1,9 +1,0 @@
-namespace Tower.Network.Packet;
-
-table ClientJoinRequest {
-    username: string;
-    character_name: string;
-    token: string;
-}
-
-root_type ClientJoinRequest;
