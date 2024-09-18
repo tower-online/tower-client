@@ -1,11 +1,11 @@
 using Godot;
 
-namespace Tower.World;
+namespace Tower.Entity;
 
 [GlobalClass]
-public partial class Entity : Node3D
+public partial class EntityBase : Node3D
 {
-    public int EntityId { get; set; }
+    public uint EntityId { get; set; }
     public Vector2 TargetDirection { get; set; }
     public Vector2 TargetPosition { get; set; }
 

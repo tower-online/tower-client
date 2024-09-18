@@ -19,7 +19,7 @@ config/icon="res://icon.svg"
 
 ConnectionManager="*res://Network/Connection.cs"
 GameManager="*res://System/GameManager.cs"
-EntityManager="*res://World/EntityManager.cs"
+EntityManager="*res://Entity/EntityManager.cs"
 
 [dotnet]
 

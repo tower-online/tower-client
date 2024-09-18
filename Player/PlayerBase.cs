@@ -1,11 +1,11 @@
 using Godot;
 using System;
-using Tower.World;
+using Tower.Entity;
 
-namespace Tower.Players;
+namespace Tower.Player;
 
 [GlobalClass]
-public partial class Player : Entity
+public partial class PlayerBase : EntityBase
 {
 	[Signal]
 	public delegate void SPlayerMovementEventHandler(Vector2 targetDirection);

@@ -11,24 +11,14 @@ namespace Tower.Network;
 
 public partial class Connection : Node
 {
+    public event Action<ClientJoinResponse> ClientJoinResponseEvent;
     public event Action<PlayerSpawn> PlayerSpawnEvent;
-    
-    [Signal]
-    public delegate void SEntityMovementsEventHandler(
-        int[] entityIds, Godot.Vector2[] targetDirections, Godot.Vector2[] targetPositions);
-
-    [Signal]
-    public delegate void SEntitySpawnsEventHandler(
-        int[] entityIds, int[] entityTypes, Godot.Vector2[] positions, float[] rotations);
-
-    [Signal]
-    public delegate void SClientJoinResponseEventHandler(ClientJoinResponseEventArgs args);
-
-    [Signal]
-    public delegate void SPlayerEnterZoneResponseEventHandler(PlayerEnterZoneResponseEventArgs args);
+    public event Action<PlayerEnterZoneResponse> PlayerEnterZoneResponseEvent;
+    public event Action<EntityMovements> EntityMovementsEvent;
 
     private TcpClient _client;
     private NetworkStream _stream;
+    private readonly BufferBlock<ByteBuffer> _receiveBufferBlock = new();
     private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
     private bool _isConnecting = false;
 
@@ -38,7 +28,7 @@ public partial class Connection : Node
     {
         if (_isConnecting) return false;
         _isConnecting = true;
-        
+
         GD.Print($"[{nameof(Connection)}] Connecting to {host}:{port}...");
         try
         {
@@ -57,14 +47,15 @@ public partial class Connection : Node
             GD.PrintErr($"[{nameof(Connection)}] Error connecting: {ex}");
             return false;
         }
-        
+
         // Receiving loop
         _ = Task.Run(async () =>
         {
             while (_client.Connected)
             {
                 var buffer = await ReceivePacketAsync();
-                HandlePacket(buffer);
+                if (buffer is null) continue;
+                _receiveBufferBlock.Post(buffer);
             }
         });
 
@@ -96,9 +87,18 @@ public partial class Connection : Node
         GD.Print($"[{nameof(Connection)}] Disconnecting...");
         _stream?.Close();
         _client?.Close();
-        
+
         _stream?.Dispose();
         _stream?.Dispose();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (!_receiveBufferBlock.TryReceiveAll(out var buffers)) return;
+        foreach (var buffer in buffers)
+        {
+            HandlePacket(buffer);
+        }
     }
 
     public override void _ExitTree()
@@ -109,7 +109,7 @@ public partial class Connection : Node
 
     private async Task<ByteBuffer> ReceivePacketAsync()
     {
-        if (!_client.Connected) return new ByteBuffer(0);
+        if (!_client.Connected) return null;
 
         try
         {
@@ -130,7 +130,7 @@ public partial class Connection : Node
             Disconnect();
         }
 
-        return new ByteBuffer(0);
+        return null;
     }
 
     public void SendPacket(ByteBuffer buffer)
@@ -153,7 +153,7 @@ public partial class Connection : Node
         switch (packetBase.PacketBaseType)
         {
             case PacketType.EntityMovements:
-                // HandleEntityMovements(packetBase.PacketBase_AsEntityMovements());
+                EntityMovementsEvent?.Invoke(packetBase.PacketBase_AsEntityMovements());
                 break;
 
             case PacketType.EntitySpawns:
@@ -167,15 +167,13 @@ public partial class Connection : Node
             case PacketType.PlayerSpawn:
                 PlayerSpawnEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawn());
                 break;
-            
+
             case PacketType.PlayerEnterZoneResponse:
-                CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SPlayerEnterZoneResponse,
-                    new PlayerEnterZoneResponseEventArgs(packetBase.PacketBase_AsPlayerEnterZoneResponse()));
+                PlayerEnterZoneResponseEvent?.Invoke(packetBase.PacketBase_AsPlayerEnterZoneResponse());
                 break;
-            
+
             case PacketType.ClientJoinResponse:
-                CallDeferred(GodotObject.MethodName.EmitSignal, SignalName.SClientJoinResponse,
-                    new ClientJoinResponseEventArgs(packetBase.PacketBase_AsClientJoinResponse()));
+                ClientJoinResponseEvent?.Invoke(packetBase.PacketBase_AsClientJoinResponse());
                 break;
 
             case PacketType.HeartBeat:
@@ -208,14 +206,4 @@ public partial class Connection : Node
 
         SendPacket(builder.DataBuffer);
     }
-}
-
-public partial class ClientJoinResponseEventArgs(ClientJoinResponse response) : GodotObject
-{
-    public ClientJoinResponse Response { get; } = response;
-}
-
-public partial class PlayerEnterZoneResponseEventArgs(PlayerEnterZoneResponse response) : GodotObject
-{
-    public PlayerEnterZoneResponse Response { get; } = response;
 }

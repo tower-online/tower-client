@@ -12,4 +12,7 @@
     <PackageReference Include="Google.FlatBuffers" Version="24.3.25" />
     <PackageReference Include="YamlDotNet" Version="16.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="World\" />
+  </ItemGroup>
 </Project>

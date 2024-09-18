@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Godot;
 using Google.FlatBuffers;
+using Tower.Entity;
 using Tower.Network;
 using Tower.Network.Packet;
 
@@ -11,12 +13,18 @@ public partial class GameManager : Node
     public string AuthToken { get; set; }
 
     private Connection _connectionManager;
+    private EntityManager _entityManager;
+
+    private readonly Zone _currentZone;
+    private readonly PackedScene _defaultZone = GD.Load<PackedScene>("res://World/Levels/DefaultZone.tscn");
 
     public override void _Ready()
     {
         _connectionManager = GetNode<Connection>("/root/ConnectionManager");
-        _connectionManager.SClientJoinResponse += HandleClientJoinResponse;
-        _connectionManager.SPlayerEnterZoneResponse += HandlePlayerEnterZoneResponse;
+        _connectionManager.ClientJoinResponseEvent += OnClientJoinResponse;
+        _connectionManager.PlayerEnterZoneResponseEvent += OnPlayerEnterZoneResponse;
+
+        _entityManager = GetNode<EntityManager>("/root/EntityManager");
         
 #if TOWER_PLATFORM_TEST
         foreach (var arg in OS.GetCmdlineUserArgs())
@@ -39,10 +47,10 @@ public partial class GameManager : Node
 #endif
     }
 
-    private void HandleClientJoinResponse(ClientJoinResponseEventArgs args)
+    private void OnClientJoinResponse(ClientJoinResponse response)
     {
-        var response = args.Response;
         var location = response.CurrentLocation.Value;
+        _entityManager.OnPlayerSpawn(response.Spawn.Value);
         GD.Print($"Player spawn on {location.Floor}/{location.ZoneId}");
 
         var builder = new FlatBufferBuilder(128);
@@ -55,9 +63,8 @@ public partial class GameManager : Node
         _connectionManager.SendPacket(builder.DataBuffer);
     }
 
-    private void HandlePlayerEnterZoneResponse(PlayerEnterZoneResponseEventArgs args)
+    private void OnPlayerEnterZoneResponse(PlayerEnterZoneResponse response)
     {
-        var response = args.Response;
         if (!response.Result)
         {
             GD.PrintErr("PlayerEnterZoneResponse: Fail");
@@ -66,5 +73,13 @@ public partial class GameManager : Node
         
         var location = response.Location.Value;
         GD.Print($"Player enter zone {location.Floor}/{location.ZoneId}");
+        
+        //TODO: Load zones; Current: Only default zone
+        if (location.ZoneId != 0) return;
+        _entityManager.Clear();
+        if (GetTree().ChangeSceneToPacked(_defaultZone) != Error.Ok)
+        {
+            GD.PrintErr("Error changing scene");
+        }
     }
 }
