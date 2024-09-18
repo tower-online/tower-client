@@ -11,13 +11,14 @@ namespace Tower.Lobby;
 
 public partial class LobbyManager : Node
 {
+    [Signal]
+    public delegate void SUpdateCharacterSlotsEventHandler(UpdateCharacterSlotsEventArgs args);
+    
     private Connection _connectionManager;
     private GameManager _gameManager;
 
-    [Signal]
-    public delegate void SUpdateCharacterSlotsEventHandler(UpdateCharacterSlotsEventArgs args);
-
     private Control _characterSlots;
+    private Control _characterCreator;
     private readonly PackedScene _characterSlotScene = GD.Load<PackedScene>("res://Lobby/CharacterSlot.tscn");
 
     public override void _Ready()
@@ -26,13 +27,19 @@ public partial class LobbyManager : Node
         _gameManager = GetNode<GameManager>("/root/GameManager");
 
         _characterSlots = GetNode<Control>("CharacterSlots");
+        _characterCreator = _characterSlots.GetNode<Control>("CharacterCreator");
+        _characterCreator.GetNode<Button>("CreateButton").Pressed += () =>
+        {
+            var holder = _characterCreator.GetNode<LineEdit>("CharacterNameHolder");
+            HandleCharacterCreate(holder.Text);
+        };
 
         SUpdateCharacterSlots += OnUpdateCharacterSlots;
 
         _ = Task.Run(UpdateCharacterSlots);
     }
 
-    private async void UpdateCharacterSlots()
+    private async Task UpdateCharacterSlots()
     {
         if (_gameManager!.Username is null) return;
 
@@ -62,6 +69,17 @@ public partial class LobbyManager : Node
             slot.CharacterName.Text = characterName;
             slot.StartButtonPressed += HandleCharacterStart;
         }
+    }
+
+    private void HandleCharacterCreate(string characterName)
+    {
+        _ = Task.Run(async () =>
+        {
+            if (!await Auth.RequestCharacterCreate(
+                    _gameManager.Username, _gameManager.AuthToken, characterName, "HUMAN")) return;
+
+            await UpdateCharacterSlots();
+        });
     }
 
     private void HandleCharacterStart(string characterName)

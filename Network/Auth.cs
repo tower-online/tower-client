@@ -62,6 +62,42 @@ public static class Auth
         }
     }
 
+    public static async Task<bool> RequestCharacterCreate(string username, string token, string characterName, string race)
+    {
+#if TOWER_PLATFORM_TEST
+        var url = $"https://{Settings.RemoteHost}:{Settings.RemoteAuthPort}/character/create/test";
+        var requestData = new Dictionary<string, string>
+        {
+            ["platform"] = "TEST",
+            ["username"] = username,
+            ["jwt"] = token,
+            ["character_name"] = characterName,
+            ["race"] = race
+        };
+#elif TOWER_PLATFORM_STEAM
+        //TODO
+#endif
+        
+        using var handler = new HttpClientHandler();
+        handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+
+        using var client = new HttpClient(handler);
+        try
+        {
+            HttpResponseMessage response = await client.PostAsync(url, new StringContent(
+                JsonSerializer.Serialize(requestData), Encoding.UTF8, "application/json"
+            ));
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException ex)
+        {
+            GD.PrintErr($"Error requesting characters: {ex.Message}");
+            return false;
+        }
+
+        return true;
+    }
+
     public static async Task<List<string>> RequestCharacters(string username, string token)
     {
         var url = $"https://{Settings.RemoteHost}:{Settings.RemoteAuthPort}/characters";
