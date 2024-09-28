@@ -22,7 +22,10 @@ public partial class EntityManager : Node
     {
         _connectionManager = GetNode<Connection>("/root/ConnectionManager");
         _connectionManager.PlayerSpawnEvent += OnPlayerSpawn;
+        _connectionManager.PlayerSpawnsEvent += OnPlayerSpawns;
         _connectionManager.EntityMovementsEvent += OnEntityMovements;
+        _connectionManager.EntitySpawnsEvent += OnEntitySpawns;
+        _connectionManager.EntityDespawnEvent += OnEntityDespawn;
     }
 
     public void Clear()
@@ -81,11 +84,20 @@ public partial class EntityManager : Node
         }
     }
 
+    private void OnEntityDespawn(EntityDespawn despawn)
+    {
+        var entityId = despawn.EntityId;
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        
+        entity.QueueFree();
+        _entities.Remove(entityId);
+    }
+
     public void OnPlayerSpawn(PlayerSpawn spawn)
     {
         GD.Print($"{nameof(EntityManager)}/{nameof(OnPlayerSpawn)}: {spawn.EntityId}");
         
-        //TODO: Entity Type
+        //TODO: Entity Type, Extract and remove duplication of spawning player
         var player = (PlayerBase)_playerScene.Instantiate();
         player.IsMaster = spawn.IsMaster;
         player.EntityId = spawn.EntityId;
@@ -99,5 +111,26 @@ public partial class EntityManager : Node
         var mainCamera = _mainCameraScene.Instantiate();
         mainCamera.Set("target", (Node3D)player);
         AddSibling(mainCamera);
+    }
+
+    private void OnPlayerSpawns(PlayerSpawns spawns)
+    {
+        GD.Print($"OnPlayerSpawns: {spawns.SpawnsLength}");
+        for (int i = 0; i < spawns.SpawnsLength; i++)
+        {
+            PlayerSpawn spawn;
+            {
+                var s = spawns.Spawns(i);
+                if (!s.HasValue) continue;
+                spawn = s.Value;
+            }
+            
+            //TODO: Entity Type
+            var player = (PlayerBase)_playerScene.Instantiate();
+            player.IsMaster = spawn.IsMaster;
+            player.EntityId = spawn.EntityId;
+            _entities[player.EntityId] = player;
+            AddSibling(player);
+        }
     }
 }

@@ -91,7 +91,11 @@ public static class Auth
         }
         catch (HttpRequestException ex)
         {
-            GD.PrintErr($"Error requesting characters: {ex.Message}");
+            GD.PrintErr($"Error creating character: {ex.Message}");
+            if (ex.Data.Contains("detail"))
+            {
+                GD.PrintErr(ex.Data["detail"].ToString());
+            }
             return false;
         }
 

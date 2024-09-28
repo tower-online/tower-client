@@ -13,8 +13,11 @@ public partial class Connection : Node
 {
     public event Action<ClientJoinResponse> ClientJoinResponseEvent;
     public event Action<PlayerSpawn> PlayerSpawnEvent;
+    public event Action<PlayerSpawns> PlayerSpawnsEvent;
     public event Action<PlayerEnterZoneResponse> PlayerEnterZoneResponseEvent;
     public event Action<EntityMovements> EntityMovementsEvent;
+    public event Action<EntitySpawns> EntitySpawnsEvent;
+    public event Action<EntityDespawn> EntityDespawnEvent;
 
     private TcpClient _client;
     private NetworkStream _stream;
@@ -157,15 +160,19 @@ public partial class Connection : Node
                 break;
 
             case PacketType.EntitySpawns:
-                // HandleEntitySpawns(packetBase.PacketBase_AsEntitySpawns());
+                EntitySpawnsEvent?.Invoke(packetBase.PacketBase_AsEntitySpawns());
                 break;
 
             case PacketType.EntityDespawn:
-                // HandleEntityDespawn(packetBase.PacketBase_AsEntityDespawn());
+                EntityDespawnEvent?.Invoke(packetBase.PacketBase_AsEntityDespawn());
                 break;
 
             case PacketType.PlayerSpawn:
                 PlayerSpawnEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawn());
+                break;
+            
+            case PacketType.PlayerSpawns:
+                PlayerSpawnsEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawns());
                 break;
 
             case PacketType.PlayerEnterZoneResponse:
