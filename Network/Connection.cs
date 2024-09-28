@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Tower.Network.Packet;
-using Tower.System;
+using Timer = System.Timers.Timer;
 
 namespace Tower.Network;
 
@@ -24,8 +24,10 @@ public partial class Connection : Node
     private readonly BufferBlock<ByteBuffer> _receiveBufferBlock = new();
     private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
     private bool _isConnecting = false;
+    private readonly Timer _pingTimer = new(TimeSpan.FromSeconds(1));
 
     public bool IsClientConnected => _client?.Connected ?? false;
+    public TimeSpan RoundtripLatency { get; private set; }
 
     public async Task<bool> ConnectAsync(string host, int port)
     {
@@ -78,6 +80,19 @@ public partial class Connection : Node
                 }
             }
         });
+
+        // TODO: Fix invalid packet base when add timestamp field
+        // Ping loop
+        // _pingTimer.Elapsed += (_, _) =>
+        // {
+        //     FlatBufferBuilder builder = new(64);
+        //     var ping = Ping.CreatePing(builder, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        //     var packetBase = PacketBase.CreatePacketBase(builder, PacketType.Ping, ping.Value);
+        //     builder.FinishSizePrefixed(packetBase.Value);
+        //     SendPacket(builder.DataBuffer);
+        // };
+        // _pingTimer.AutoReset = true;
+        // _pingTimer.Enabled = true;
 
         _isConnecting = false;
         return true;
@@ -170,7 +185,7 @@ public partial class Connection : Node
             case PacketType.PlayerSpawn:
                 PlayerSpawnEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawn());
                 break;
-            
+
             case PacketType.PlayerSpawns:
                 PlayerSpawnsEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawns());
                 break;
@@ -186,6 +201,10 @@ public partial class Connection : Node
             case PacketType.HeartBeat:
                 HandleHeartBeat();
                 break;
+
+            case PacketType.Ping:
+                HandlePing(packetBase.PacketBase_AsPing());
+                break;
         }
     }
 
@@ -199,6 +218,13 @@ public partial class Connection : Node
         builder.FinishSizePrefixed(packetBase.Value);
 
         SendPacket(builder.DataBuffer);
+    }
+
+    private void HandlePing(Ping ping)
+    {
+        RoundtripLatency = TimeSpan.FromMilliseconds(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - ping.Timestamp);
+        GD.Print($"current: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+        GD.Print($"ping: latency={RoundtripLatency.Milliseconds}ms");
     }
 
     public void HandlePlayerMovement(Godot.Vector2 targetDirection)
