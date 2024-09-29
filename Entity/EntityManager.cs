@@ -53,6 +53,10 @@ public partial class EntityManager : Node
 
             entity.TargetDirection = new Vector2(targetDirection.X, targetDirection.Y);
             entity.TargetPosition = new Vector2(targetPosition.X, targetPosition.Y);
+            if (!entity.TargetDirection.IsZeroApprox())
+            {
+                entity.TargetDirection = entity.TargetDirection.Normalized();
+            }
         }
     }
 
