@@ -52,7 +52,7 @@ public partial class EntityManager : Node
             var targetPosition = movement.TargetPosition;
 
             entity.TargetDirection = new Vector2(targetDirection.X, targetDirection.Y);
-            entity.TargetPosition = new Vector2(targetPosition.X, targetPosition.Y);
+            entity.TargetPosition = new Vector3(targetPosition.X, targetPosition.Y, targetPosition.Z);
             if (!entity.TargetDirection.IsZeroApprox())
             {
                 entity.TargetDirection = entity.TargetDirection.Normalized();
