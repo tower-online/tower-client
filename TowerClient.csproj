@@ -15,4 +15,7 @@
   <ItemGroup>
     <Folder Include="World\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="World\Data\.gitignore" />
+  </ItemGroup>
 </Project>

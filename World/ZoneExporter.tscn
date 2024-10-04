@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://dwle833i4mwah"]
+
+[ext_resource type="Script" path="res://World/ZoneExporter.cs" id="1_uwls4"]
+[ext_resource type="PackedScene" uid="uid://c001mrhvw6h40" path="res://World/Levels/Zone1.tscn" id="2_6hv61"]
+
+[node name="ZoneExporter" type="Node"]
+script = ExtResource("1_uwls4")
+Zones = Array[Object]([ExtResource("2_6hv61")])

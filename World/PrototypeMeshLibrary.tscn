@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://b4f44ub3y44kx"]
+[gd_scene load_steps=7 format=3 uid="uid://b4f44ub3y44kx"]
 
 [ext_resource type="Texture2D" uid="uid://l5bo5qmybpu3" path="res://World/Prototype/Dark/texture_13.png" id="1_te8hd"]
+[ext_resource type="Texture2D" uid="uid://b84qs1gjbt5sh" path="res://World/Prototype/Orange/texture_01.png" id="2_t24m4"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sxdtj"]
 albedo_texture = ExtResource("1_te8hd")
@@ -10,7 +11,18 @@ material = SubResource("StandardMaterial3D_sxdtj")
 size = Vector2(1, 1)
 center_offset = Vector3(0, 0.5, 0)
 
+[sub_resource type="BoxMesh" id="BoxMesh_682th"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_75ubk"]
+albedo_texture = ExtResource("2_t24m4")
+
 [node name="MeshLibrary" type="Node3D"]
 
 [node name="PrototypeDarkFloor" type="MeshInstance3D" parent="."]
+visible = false
 mesh = SubResource("PlaneMesh_esygh")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("BoxMesh_682th")
+surface_material_override/0 = SubResource("StandardMaterial3D_75ubk")
