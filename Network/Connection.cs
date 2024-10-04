@@ -18,6 +18,7 @@ public partial class Connection : Node
     public event Action<EntityMovements> EntityMovementsEvent;
     public event Action<EntitySpawns> EntitySpawnsEvent;
     public event Action<EntityDespawn> EntityDespawnEvent;
+    public event Action<SkillMeleeAttack> SkillMeleeAttackEvent;
 
     private TcpClient _client;
     private NetworkStream _stream;
@@ -181,6 +182,10 @@ public partial class Connection : Node
             case PacketType.EntityDespawn:
                 EntityDespawnEvent?.Invoke(packetBase.PacketBase_AsEntityDespawn());
                 break;
+            
+            case PacketType.SkillMeleeAttack:
+                SkillMeleeAttackEvent?.Invoke(packetBase.PacketBase_AsSkillMeleeAttack());
+                break;
 
             case PacketType.PlayerSpawn:
                 PlayerSpawnEvent?.Invoke(packetBase.PacketBase_AsPlayerSpawn());
@@ -235,6 +240,16 @@ public partial class Connection : Node
             Packet.Vector2.CreateVector2(builder, targetDirection.X, targetDirection.Y));
         var movement = PlayerMovement.EndPlayerMovement(builder);
         var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerMovement, movement.Value);
+        builder.FinishSizePrefixed(packetBase.Value);
+
+        SendPacket(builder.DataBuffer);
+    }
+
+    public void HandlePlayerAttack1()
+    {
+        var builder = new FlatBufferBuilder(128);
+        var attack = SkillMeleeAttack.CreateSkillMeleeAttack(builder);
+        var packetBase = PacketBase.CreatePacketBase(builder, PacketType.SkillMeleeAttack, attack.Value);
         builder.FinishSizePrefixed(packetBase.Value);
 
         SendPacket(builder.DataBuffer);

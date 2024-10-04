@@ -26,6 +26,7 @@ public partial class EntityManager : Node
         _connectionManager.EntityMovementsEvent += OnEntityMovements;
         _connectionManager.EntitySpawnsEvent += OnEntitySpawns;
         _connectionManager.EntityDespawnEvent += OnEntityDespawn;
+        _connectionManager.SkillMeleeAttackEvent += OnSkillMeleeAttack;
     }
 
     public void Clear()
@@ -105,12 +106,20 @@ public partial class EntityManager : Node
         var player = (PlayerBase)_playerScene.Instantiate();
         player.IsMaster = spawn.IsMaster;
         player.EntityId = spawn.EntityId;
+
+        if (spawn.Data is not null)
+        {
+            var data = spawn.Data.Value;
+            player.CharacterName = data.Name;
+        }
+        
         _entities[player.EntityId] = player;
         AddSibling(player);
 
         if (!player.IsMaster) return;
         _localPlayer = player;
         _localPlayer.SPlayerMovement += _connectionManager.HandlePlayerMovement;
+        _localPlayer.Attack1Event += _connectionManager.HandlePlayerAttack1;
         
         var mainCamera = _mainCameraScene.Instantiate();
         mainCamera.Set("target", (Node3D)player);
@@ -133,8 +142,20 @@ public partial class EntityManager : Node
             var player = (PlayerBase)_playerScene.Instantiate();
             player.IsMaster = spawn.IsMaster;
             player.EntityId = spawn.EntityId;
+            
+            if (spawn.Data is not null)
+            {
+                var data = spawn.Data.Value;
+                player.CharacterName = data.Name;
+            }
+            
             _entities[player.EntityId] = player;
             AddSibling(player);
         }
+    }
+
+    private void OnSkillMeleeAttack(SkillMeleeAttack attack)
+    {
+        GD.Print("Melee attack response!");
     }
 }
