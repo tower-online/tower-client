@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://cg0vvaa57e843"]
 
 [ext_resource type="Script" path="res://Player/PlayerBase.cs" id="1_ererd"]
-[ext_resource type="PackedScene" uid="uid://bx46cx8t7vsp0" path="res://Player/Character.tscn" id="2_iwg86"]
+[ext_resource type="PackedScene" uid="uid://dqfavaiux1d60" path="res://Player/Character.glb" id="2_tfo63"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_k741w"]
 size = Vector3(1, 2, 1)
@@ -11,7 +11,7 @@ script = ExtResource("1_ererd")
 
 [node name="Pivot" type="Node3D" parent="."]
 
-[node name="Character" parent="Pivot" instance=ExtResource("2_iwg86")]
+[node name="Character" parent="Pivot" instance=ExtResource("2_tfo63")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Pivot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
