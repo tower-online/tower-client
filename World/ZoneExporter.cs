@@ -22,9 +22,9 @@ public partial class ZoneExporter : Node
 			var builder = new FlatBufferBuilder(1024);
 			
 			ZoneData.StartGridVector(builder, zone.SizeX * zone.SizeZ);
-			for (var x = 0; x < zone.SizeX; x += 1)
+			for (var z = zone.SizeZ - 1; z >= 0; z -= 1)
 			{
-				for (var z = 0; z < zone.SizeZ; z += 1)
+				for (var x = zone.SizeX - 1; x >= 0; x -= 1)
 				{
 					// TODO: Determine whether the object is obstacle or not
 					var isBlocked = zone.GridMap.GetCellItem(new Vector3I(x, 0, z)) != GridMap.InvalidCellItem;
