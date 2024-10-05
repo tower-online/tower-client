@@ -232,12 +232,12 @@ public partial class Connection : Node
         GD.Print($"ping: latency={RoundtripLatency.Milliseconds}ms");
     }
 
-    public void HandlePlayerMovement(Godot.Vector2 targetDirection)
+    public void HandlePlayerMovement(Godot.Vector3 targetDirection)
     {
         var builder = new FlatBufferBuilder(128);
         PlayerMovement.StartPlayerMovement(builder);
-        PlayerMovement.AddTargetDirection(builder,
-            Packet.Vector2.CreateVector2(builder, targetDirection.X, targetDirection.Y));
+        PlayerMovement.AddX(builder, targetDirection.X);
+        PlayerMovement.AddZ(builder, targetDirection.Z);
         var movement = PlayerMovement.EndPlayerMovement(builder);
         var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerMovement, movement.Value);
         builder.FinishSizePrefixed(packetBase.Value);

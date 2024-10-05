@@ -27,7 +27,7 @@ public partial class ZoneExporter : Node
 				for (var z = 0; z < zone.SizeZ; z += 1)
 				{
 					// TODO: Determine whether the object is obstacle or not
-					var isBlocked = zone.GridMap.GetCellItem(new Vector3I(x, 0, z)) == GridMap.InvalidCellItem;
+					var isBlocked = zone.GridMap.GetCellItem(new Vector3I(x, 0, z)) != GridMap.InvalidCellItem;
 					Cell.CreateCell(builder, isBlocked);
 				}
 			}

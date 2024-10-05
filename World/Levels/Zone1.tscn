@@ -5,7 +5,7 @@
 
 [sub_resource type="Environment" id="Environment_gbbx6"]
 
-[node name="DefaultZone" type="Node" node_paths=PackedStringArray("GridMap")]
+[node name="Zone1" type="Node" node_paths=PackedStringArray("GridMap")]
 script = ExtResource("1_bypsp")
 ZoneId = "F1Z1"
 SizeX = 16

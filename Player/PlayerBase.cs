@@ -8,14 +8,13 @@ namespace Tower.Player;
 public partial class PlayerBase : EntityBase
 {
 	[Signal]
-	public delegate void SPlayerMovementEventHandler(Vector2 targetDirection);
+	public delegate void SPlayerMovementEventHandler(Vector3 targetDirection);
 
 	public event Action Attack1Event; 
 	
 	public bool IsMaster { get; set; } = false;
 	public string CharacterName { get; set; }
 	
-	private Vector2 TargetDirectionInput { get; set; }
 	//TODO: Change to edge trigger
 	private readonly TimeSpan _movementTickInterval = TimeSpan.FromMilliseconds(50);
 	private DateTime _lastMovementTick = DateTime.Now;
@@ -38,10 +37,16 @@ public partial class PlayerBase : EntityBase
 		HandleAnimations(delta);
 
 		if (!IsMaster) return;
-		TargetDirectionInput = Input.GetVector("MoveLeft", "MoveRight", "MoveUp", "MoveDown");
-
 		if (DateTime.Now < _lastMovementTick + _movementTickInterval) return;
-		EmitSignal(SignalName.SPlayerMovement, TargetDirectionInput);
+		
+		var targetDirection = new Vector3(
+			Input.GetAxis("MoveLeft", "MoveRight"),
+			0,
+			Input.GetAxis("MoveUp", "MoveDown"));
+		if (!targetDirection.IsZeroApprox())
+			targetDirection = targetDirection.Normalized();
+
+		EmitSignal(SignalName.SPlayerMovement, targetDirection);
 		_lastMovementTick = DateTime.Now;
 	}
 

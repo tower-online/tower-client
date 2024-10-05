@@ -16,9 +16,6 @@ public partial class GameManager : Node
 	private Connection _connectionManager;
 	private EntityManager _entityManager;
 
-	private readonly Zone _currentZone;
-	private readonly PackedScene _defaultZone = GD.Load<PackedScene>("res://World/Levels/DefaultZone.tscn");
-
 	public override void _Ready()
 	{
 		_connectionManager = GetNode<Connection>("/root/ConnectionManager");
@@ -75,10 +72,10 @@ public partial class GameManager : Node
 		var location = response.Location.Value;
 		GD.Print($"Player enter zone {location.Floor}/{location.ZoneId}");
 		
-		//TODO: Load zones; Current: Only default zone
-		if (location.ZoneId != 0) return;
+		
+		var packedZone = GD.Load<PackedScene>($"res://World/Levels/Zone{location.ZoneId}.tscn");
 		_entityManager.Clear();
-		if (GetTree().ChangeSceneToPacked(_defaultZone) != Error.Ok)
+		if (GetTree().ChangeSceneToPacked(packedZone) != Error.Ok)
 		{
 			GD.PrintErr("Error changing scene");
 		}
