@@ -26,6 +26,7 @@ public partial class EntityManager : Node
         _connectionManager.EntityMovementsEvent += OnEntityMovements;
         _connectionManager.EntitySpawnsEvent += OnEntitySpawns;
         _connectionManager.EntityDespawnEvent += OnEntityDespawn;
+        _connectionManager.EntityResourceChangesEvent += OnEntityResourceChanges;
         _connectionManager.SkillMeleeAttackEvent += OnSkillMeleeAttack;
     }
 
@@ -98,9 +99,25 @@ public partial class EntityManager : Node
         _entities.Remove(entityId);
     }
 
+    private void OnEntityResourceChanges(EntityResourceChanges changes)
+    {
+        for (var i = 0; i < changes.ChangesLength; i++)
+        {
+            EntityResourceChange change;
+            {
+                var c = changes.Changes(i);
+                if (!c.HasValue) continue;
+                change = c.Value;
+            }
+            
+            if (!_entities.TryGetValue(change.EntityId, out var entity)) continue;
+            entity.ModifyResource(change.ResourceType, change.ModifyMode, change.ModifyingAmount);
+        }
+    }
+
     public void OnPlayerSpawn(PlayerSpawn spawn)
     {
-        GD.Print($"{nameof(EntityManager)}/{nameof(OnPlayerSpawn)}: {spawn.EntityId}");
+        // GD.Print($"{nameof(EntityManager)}/{nameof(OnPlayerSpawn)}: {spawn.EntityId}");
         
         //TODO: Entity Type, Extract and remove duplication of spawning player
         var player = (PlayerBase)_playerScene.Instantiate();
@@ -111,6 +128,24 @@ public partial class EntityManager : Node
         {
             var data = spawn.Data.Value;
             player.CharacterName = data.Name;
+
+            if (data.Stats.HasValue)
+            {
+                var stats = data.Stats.Value;
+            }
+
+            for (var i = 0; i < data.ResourcesLength; i += 1)
+            {
+                var r = data.Resources(i);
+                if (!r.HasValue) return;
+                var resource = r.Value;
+
+                if (resource.Type == EntityResourceType.HEALTH)
+                {
+                    player.MaxHealth = resource.MaxValue;
+                    player.Health = resource.Value;
+                }
+            }
         }
         
         _entities[player.EntityId] = player;
@@ -128,7 +163,6 @@ public partial class EntityManager : Node
 
     private void OnPlayerSpawns(PlayerSpawns spawns)
     {
-        GD.Print($"OnPlayerSpawns: {spawns.SpawnsLength}");
         for (int i = 0; i < spawns.SpawnsLength; i++)
         {
             PlayerSpawn spawn;
@@ -138,24 +172,17 @@ public partial class EntityManager : Node
                 spawn = s.Value;
             }
             
-            //TODO: Entity Type
-            var player = (PlayerBase)_playerScene.Instantiate();
-            player.IsMaster = spawn.IsMaster;
-            player.EntityId = spawn.EntityId;
-            
-            if (spawn.Data is not null)
-            {
-                var data = spawn.Data.Value;
-                player.CharacterName = data.Name;
-            }
-            
-            _entities[player.EntityId] = player;
-            AddSibling(player);
+            OnPlayerSpawn(spawn);
         }
     }
 
     private void OnSkillMeleeAttack(SkillMeleeAttack attack)
     {
-        GD.Print("Melee attack response!");
+        var entityId = attack.EntityId;
+        // var weaponSlot = attack.WeaponSlot;
+
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity is not PlayerBase player) return;
+        player.HandleAttack1();
     }
 }

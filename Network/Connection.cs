@@ -18,6 +18,7 @@ public partial class Connection : Node
     public event Action<EntityMovements> EntityMovementsEvent;
     public event Action<EntitySpawns> EntitySpawnsEvent;
     public event Action<EntityDespawn> EntityDespawnEvent;
+    public event Action<EntityResourceChanges> EntityResourceChangesEvent; 
     public event Action<SkillMeleeAttack> SkillMeleeAttackEvent;
 
     private TcpClient _client;
@@ -181,6 +182,10 @@ public partial class Connection : Node
 
             case PacketType.EntityDespawn:
                 EntityDespawnEvent?.Invoke(packetBase.PacketBase_AsEntityDespawn());
+                break;
+            
+            case PacketType.EntityResourceChanges:
+                EntityResourceChangesEvent?.Invoke(packetBase.PacketBase_AsEntityResourceChanges());
                 break;
             
             case PacketType.SkillMeleeAttack:

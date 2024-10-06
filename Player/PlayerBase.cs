@@ -1,6 +1,8 @@
 using Godot;
 using System;
 using Tower.Entity;
+using Tower.Network.Packet;
+using Vector3 = Godot.Vector3;
 
 namespace Tower.Player;
 
@@ -20,15 +22,19 @@ public partial class PlayerBase : EntityBase
 	private DateTime _lastMovementTick = DateTime.Now;
 
 	private AnimationTree _animationTree;
-	private double _runBlend;
-	private static readonly StringName RunBlendParameter = "parameters/run_blend/blend_amount";
+	private Label3D _healthLabel;
 	
 	public override void _Ready()
 	{
 		base._Ready();
 		
 		_animationTree = GetNode<AnimationTree>("Pivot/Character/AnimationTree");
+		_healthLabel = GetNode<Label3D>("HealthLabel");
 		GetNode<Label3D>("CharacterNameLabel").Text = CharacterName;
+
+		ResourceModified += OnResourceModified;
+
+		_healthLabel.Text = $"{Health} / {MaxHealth}";
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -60,6 +66,11 @@ public partial class PlayerBase : EntityBase
 		}
 	}
 
+	public void HandleAttack1()
+	{
+		_animationTree?.Set("parameters/PunchingShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+	}
+
 	private void HandleAnimations(double delta)
 	{
 		const double blendSpeed = 10.0;
@@ -67,13 +78,19 @@ public partial class PlayerBase : EntityBase
 		// If moving
 		if (TargetDirection.IsZeroApprox())
 		{
-			_runBlend = Mathf.Lerp(_runBlend, 1.0, blendSpeed * delta);
+			_animationTree?.Set("parameters/Movement/transition_request", "Idle");
 		}
 		else
 		{
-			_runBlend = Mathf.Lerp(_runBlend, 0.0, blendSpeed * delta);
+			_animationTree?.Set("parameters/Movement/transition_request", "JogForward");
 		}
+	}
 
-		_animationTree?.Set(RunBlendParameter, _runBlend);
+	private void OnResourceModified(EntityResourceType type, EntityResourceChangeMode mode, int amount)
+	{
+		if (type == EntityResourceType.HEALTH)
+		{
+			_healthLabel.Text = $"{Health} / {MaxHealth}";
+		}
 	}
 }
