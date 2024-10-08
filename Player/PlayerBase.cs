@@ -73,8 +73,6 @@ public partial class PlayerBase : EntityBase
 
 	private void HandleAnimations(double delta)
 	{
-		const double blendSpeed = 10.0;
-		
 		// If moving
 		if (TargetDirection.IsZeroApprox())
 		{

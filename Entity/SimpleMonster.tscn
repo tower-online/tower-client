@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://ydxmxh8d4to"]
+
+[ext_resource type="Script" path="res://Entity/SimpleMonster.cs" id="1_t7ku0"]
+[ext_resource type="PackedScene" uid="uid://cmrsrwv76iypv" path="res://Player/Character.tscn" id="2_qtyne"]
+
+[node name="SimpleMonster" type="Node3D"]
+script = ExtResource("1_t7ku0")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Character" parent="Pivot" instance=ExtResource("2_qtyne")]
+
+[node name="HealthLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+text = "100 / 100"
+
+[node name="NameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, 0)
+text = "Monster"

@@ -17,6 +17,8 @@ public partial class EntityManager : Node
     
     private readonly PackedScene _playerScene = GD.Load<PackedScene>("res://Player/Player.tscn");
     private readonly PackedScene _mainCameraScene = GD.Load<PackedScene>("res://Player/MainCamera.tscn");
+    
+    private readonly PackedScene _simpleMonsterScene = GD.Load<PackedScene>("res://Entity/SimpleMonster.tscn");
 
     public override void _Ready()
     {
@@ -74,16 +76,26 @@ public partial class EntityManager : Node
             }
             
             EntityBase entityBase;
-            switch (spawn.EntityType)
+            var entityType = spawn.EntityType;
+            if (entityType == EntityType.SIMPLE_MONSTER)
             {
-                default:
-                    GD.PrintErr($"{nameof(EntityManager)}/{nameof(OnEntitySpawns)}: Invalid entity type {spawn.EntityType}");
-                    return;
+                entityBase = (SimpleMonster)_simpleMonsterScene.Instantiate();
+            }
+            else
+            {
+                GD.PrintErr($"{nameof(EntityManager)}/{nameof(OnEntitySpawns)}: Invalid entity type {spawn.EntityType}");
+                return;
             }
 
-            entityBase!.EntityId = spawn.EntityId;
-            // entityBase.Position = new Vector3(positions[i].X, 0, positions[i].Y);
-            // entity!.Rotation =
+            entityBase.EntityId = spawn.EntityId;
+            if (spawn.Position.HasValue)
+            {
+                var position = spawn.Position.Value;
+                entityBase.Position = new Vector3(position.X, 0, position.Y);
+            }
+            // entityBase.Rotation = spawn.Rotation;
+            entityBase.Health = (int)spawn.Health;
+            entityBase.MaxHealth = (int)spawn.MaxHealth;
 
             _entities[entityBase.EntityId] = entityBase;
             AddSibling(entityBase);
