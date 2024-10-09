@@ -71,6 +71,11 @@ public partial class PlayerBase : EntityBase
 		_animationTree?.Set("parameters/PunchingShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
 	}
 
+	public void HandleHit()
+	{
+		_animationTree?.Set("parameters/HitShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+	}
+
 	private void HandleAnimations(double delta)
 	{
 		// If moving
@@ -80,7 +85,7 @@ public partial class PlayerBase : EntityBase
 		}
 		else
 		{
-			_animationTree?.Set("parameters/Movement/transition_request", "JogForward");
+			_animationTree?.Set("parameters/Movement/transition_request", "Running");
 		}
 	}
 
@@ -89,6 +94,8 @@ public partial class PlayerBase : EntityBase
 		if (type == EntityResourceType.HEALTH)
 		{
 			_healthLabel.Text = $"{Health} / {MaxHealth}";
+			
+			if (amount < 0) HandleHit();
 		}
 	}
 }

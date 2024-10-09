@@ -12,7 +12,7 @@ public partial class SimpleMonster : EntityBase
     {
         base._Ready();
         
-        _animationTree = GetNode<AnimationTree>("Pivot/Character/AnimationTree");
+        _animationTree = GetNode<AnimationTree>("Pivot/Model/AnimationTree");
         _healthLabel = GetNode<Label3D>("HealthLabel");
 
         ResourceModified += OnResourceModified;
@@ -30,6 +30,11 @@ public partial class SimpleMonster : EntityBase
     {
         _animationTree?.Set("parameters/PunchingShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
     }
+
+    public void HanldeHit()
+    {
+        _animationTree?.Set("parameters/HitShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+    }
     
     private void HandleAnimations(double delta)
     {
@@ -40,7 +45,7 @@ public partial class SimpleMonster : EntityBase
         }
         else
         {
-            _animationTree?.Set("parameters/Movement/transition_request", "JogForward");
+            _animationTree?.Set("parameters/Movement/transition_request", "Running");
         }
     }
     
@@ -49,6 +54,8 @@ public partial class SimpleMonster : EntityBase
         if (type == EntityResourceType.HEALTH)
         {
             _healthLabel.Text = $"{Health} / {MaxHealth}";
+            
+            if (amount < 0) HanldeHit();
         }
     }
 }
