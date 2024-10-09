@@ -194,7 +194,18 @@ public partial class EntityManager : Node
         // var weaponSlot = attack.WeaponSlot;
 
         if (!_entities.TryGetValue(entityId, out var entity)) return;
-        if (entity is not PlayerBase player) return;
-        player.HandleAttack1();
+
+        //TODO: Use interface IMeleeAttackable?
+        switch (entity)
+        {
+            case PlayerBase player:
+                player.HandleAttack1();
+                break;
+            case SimpleMonster simpleMonster:
+                simpleMonster.HandleAttack();
+                break;
+            default:
+                break;
+        }
     }
 }

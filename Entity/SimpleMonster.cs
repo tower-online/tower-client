@@ -19,6 +19,30 @@ public partial class SimpleMonster : EntityBase
         
         _healthLabel.Text = $"{Health} / {MaxHealth}";
     }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        base._PhysicsProcess(delta);
+        HandleAnimations(delta);
+    }
+
+    public void HandleAttack()
+    {
+        _animationTree?.Set("parameters/PunchingShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+    }
+    
+    private void HandleAnimations(double delta)
+    {
+        // If moving
+        if (TargetDirection.IsZeroApprox())
+        {
+            _animationTree?.Set("parameters/Movement/transition_request", "Idle");
+        }
+        else
+        {
+            _animationTree?.Set("parameters/Movement/transition_request", "JogForward");
+        }
+    }
     
     private void OnResourceModified(EntityResourceType type, EntityResourceChangeMode mode, int amount)
     {
