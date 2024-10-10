@@ -12,14 +12,14 @@ public partial class GameManager : Node
 	public string Username { get; private set; }
 	public string AuthToken { get; set; }
 
-	private Connection _connectionManager;
+	private ConnectionManager _connectionManager;
 	private EntityManager _entityManager;
 
 	public override void _Ready()
 	{
-		_connectionManager = GetNode<Connection>("/root/ConnectionManager");
-		_connectionManager.ClientJoinResponseEvent += OnClientJoinResponse;
-		_connectionManager.PlayerEnterZoneResponseEvent += OnPlayerEnterZoneResponse;
+		_connectionManager = GetNode<ConnectionManager>("/root/ConnectionManager");
+		_connectionManager.Connection.ClientJoinResponseEvent += OnClientJoinResponse;
+		_connectionManager.Connection.PlayerEnterZoneResponseEvent += OnPlayerEnterZoneResponse;
 
 		_entityManager = GetNode<EntityManager>("/root/EntityManager");
 		
@@ -57,7 +57,7 @@ public partial class GameManager : Node
 		var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerEnterZoneRequest, request.Value);
 		builder.FinishSizePrefixed(packetBase.Value);
 
-		_connectionManager.SendPacket(builder.DataBuffer);
+		_connectionManager.Connection.SendPacket(builder.DataBuffer);
 	}
 
 	private void OnPlayerEnterZoneResponse(PlayerEnterZoneResponse response)

@@ -14,7 +14,7 @@ public partial class LobbyManager : Node
     [Signal]
     public delegate void SUpdateCharacterSlotsEventHandler(UpdateCharacterSlotsEventArgs args);
     
-    private Connection _connectionManager;
+    private ConnectionManager _connectionManager;
     private GameManager _gameManager;
 
     private Control _characterSlots;
@@ -25,7 +25,8 @@ public partial class LobbyManager : Node
 
     public override void _Ready()
     {
-        _connectionManager = GetNode<Connection>("/root/ConnectionManager");
+        var connectionManager = GetNode<ConnectionManager>("/root/ConnectionManager");
+        _connectionManager = connectionManager;
         _gameManager = GetNode<GameManager>("/root/GameManager");
 
         _characterSlots = GetNode<Control>("CharacterSlots");
@@ -103,17 +104,18 @@ public partial class LobbyManager : Node
         var packetBase = PacketBase.CreatePacketBase(builder, PacketType.ClientJoinRequest, request.Value);
         builder.FinishSizePrefixed(packetBase.Value);
 
-        if (!_connectionManager.IsConnected)
+        if (!_connectionManager.Connection.IsConnected)
         {
             _ = Task.Run(async () =>
             {
-                if (!await _connectionManager.ConnectAsync(Settings.RemoteHost, Settings.RemoteMainPort)) return;
-                _connectionManager.SendPacket(builder.DataBuffer);
+                if (!await _connectionManager.Connection.ConnectAsync(Settings.RemoteHost, Settings.RemoteMainPort)) return;
+                _connectionManager.Run();
+                _connectionManager.Connection.SendPacket(builder.DataBuffer);
             });
         }
         else
         {
-            _connectionManager.SendPacket(builder.DataBuffer);
+            _connectionManager.Connection.SendPacket(builder.DataBuffer);
         }
     }
 }

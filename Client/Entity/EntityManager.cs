@@ -3,15 +3,14 @@ using System.Collections.Generic;
 using Tower.Network;
 using tower.network.packet;
 using Tower.Player;
-
-using Vector2 = Godot.Vector2;
+using Tower.System;
 using Vector3 = Godot.Vector3;
 
 namespace Tower.Entity;
 
 public partial class EntityManager : Node
 {
-    private Connection _connectionManager;
+    private ConnectionManager _connectionManager;
     private readonly Dictionary<uint, EntityBase> _entities = new();
     private PlayerBase _localPlayer;
     
@@ -22,14 +21,14 @@ public partial class EntityManager : Node
 
     public override void _Ready()
     {
-        _connectionManager = GetNode<Connection>("/root/ConnectionManager");
-        _connectionManager.PlayerSpawnEvent += OnPlayerSpawn;
-        _connectionManager.PlayerSpawnsEvent += OnPlayerSpawns;
-        _connectionManager.EntityMovementsEvent += OnEntityMovements;
-        _connectionManager.EntitySpawnsEvent += OnEntitySpawns;
-        _connectionManager.EntityDespawnEvent += OnEntityDespawn;
-        _connectionManager.EntityResourceChangesEvent += OnEntityResourceChanges;
-        _connectionManager.SkillMeleeAttackEvent += OnSkillMeleeAttack;
+        _connectionManager = GetNode<ConnectionManager>("/root/ConnectionManager");
+        _connectionManager.Connection.PlayerSpawnEvent += OnPlayerSpawn;
+        _connectionManager.Connection.PlayerSpawnsEvent += OnPlayerSpawns;
+        _connectionManager.Connection.EntityMovementsEvent += OnEntityMovements;
+        _connectionManager.Connection.EntitySpawnsEvent += OnEntitySpawns;
+        _connectionManager.Connection.EntityDespawnEvent += OnEntityDespawn;
+        _connectionManager.Connection.EntityResourceChangesEvent += OnEntityResourceChanges;
+        _connectionManager.Connection.SkillMeleeAttackEvent += OnSkillMeleeAttack;
     }
 
     public void Clear()

@@ -4,6 +4,7 @@ using System;
 using Tower.Entity;
 using Tower.Network;
 using tower.network.packet;
+using Tower.System;
 using Vector3 = Godot.Vector3;
 
 namespace Tower.Player;
@@ -21,13 +22,13 @@ public partial class PlayerBase : EntityBase
 	private AnimationTree _animationTree;
 	private Label3D _healthLabel;
 
-	private Connection _connectionManager;
+	private ConnectionManager _connectionManager;
 	
 	public override void _Ready()
 	{
 		base._Ready();
 
-		_connectionManager = GetNode<Connection>("/root/ConnectionManager");
+		_connectionManager = GetNode<ConnectionManager>("/root/ConnectionManager");
 		
 		_animationTree = GetNode<AnimationTree>("Pivot/Character/AnimationTree");
 		_healthLabel = GetNode<Label3D>("HealthLabel");
@@ -61,7 +62,10 @@ public partial class PlayerBase : EntityBase
 	{
 		if (!IsMaster) return;
 		
-		HandleAttack1();
+		if (@event.IsActionPressed("Attack1"))
+		{
+			HandleAttack1();
+		}
 	}
 	
 	private void HandleMovement(Vector3 targetDirection)
@@ -74,7 +78,7 @@ public partial class PlayerBase : EntityBase
 		var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerMovement, movement.Value);
 		builder.FinishSizePrefixed(packetBase.Value);
 
-		_connectionManager.SendPacket(builder.DataBuffer);
+		_connectionManager.Connection.SendPacket(builder.DataBuffer);
 	}
 
 	private void HandleAttack1()
@@ -84,7 +88,7 @@ public partial class PlayerBase : EntityBase
 		var packetBase = PacketBase.CreatePacketBase(builder, PacketType.SkillMeleeAttack, attack.Value);
 		builder.FinishSizePrefixed(packetBase.Value);
 
-		_connectionManager.SendPacket(builder.DataBuffer);
+		_connectionManager.Connection.SendPacket(builder.DataBuffer);
 	}
 
 	public void HandleAttack1Response()
