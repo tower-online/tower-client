@@ -16,7 +16,7 @@ public partial class Connection
     public event Action<EntityResourceChanges>? EntityResourceChangesEvent; 
     public event Action<SkillMeleeAttack>? SkillMeleeAttackEvent;
     
-    private void HandlePacket(ByteBuffer buffer)
+    public void HandlePacket(ByteBuffer buffer)
     {
         // if (!PacketBaseVerify.Verify(new Verifier(buffer), 0))
         // {

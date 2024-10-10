@@ -1,4 +1,4 @@
-using System.Timers;
+using System.Threading.Tasks.Dataflow;
 using Google.FlatBuffers;
 using Microsoft.Extensions.Logging;
 using Tower.Network;
@@ -78,10 +78,33 @@ public class DummyClient
         _stayZoneUntil = DateTime.Now + TimeSpan.FromSeconds(Rand.Next(5, 15));
         var updateTask = Task.Run(async () =>
         {
+            while (_connection.IsConnected) {
+                try
+                {
+                    await Task.Delay(100, cancellationToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
+                Update();
+            }
+        }, cancellationToken);
+        
+        // Start packet handling loop
+        var packetHandlingTask = Task.Run(async () =>
+        {
             while (_connection.IsConnected)
             {
-                await Task.Delay(100, cancellationToken);
-                Update();
+                try
+                {
+                    var buffer = await _connection.ReceiveBufferBlock.ReceiveAsync(cancellationToken);
+                    _connection.HandlePacket(buffer);
+                }
+                catch (Exception)
+                {
+                    break;
+                }
             }
         }, cancellationToken);
 
