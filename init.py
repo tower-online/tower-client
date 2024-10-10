@@ -38,11 +38,18 @@ if not os.path.exists(FLATC_PATH):
 
 # Compile schemas
 packet_schemas = pathlib.Path("Schemas/packet").rglob("*.fbs")
-world_schemasd = pathlib.Path("Schemas/world").rglob("*.fbs")
+world_schemas = pathlib.Path("Schemas/world").rglob("*.fbs")
 
 flatc_args = [FLATC_PATH, "--csharp", "--filename-suffix", '',
-    "-o", "Network/bin/schemas", "-I", "Schemas/packet"]
+    "-o", "Network/bin/packet_schemas", "-I", "Schemas/packet"]
 flatc_args += [schema.as_posix() for schema in packet_schemas]
+
+print(flatc_args)
+subprocess.run(flatc_args)
+
+flatc_args = [FLATC_PATH, "--csharp", "--filename-suffix", '',
+    "-o", "Client/bin/world_schemas", "-I", "Schemas/world"]
+flatc_args += [schema.as_posix() for schema in world_schemas]
 
 print(flatc_args)
 subprocess.run(flatc_args)

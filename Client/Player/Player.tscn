@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://cg0vvaa57e843"]
+
+[ext_resource type="Script" path="res://Player/PlayerBase.cs" id="1_ererd"]
+[ext_resource type="PackedScene" uid="uid://cmrsrwv76iypv" path="res://Player/PlayerModel.tscn" id="2_jx4nu"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k741w"]
+size = Vector3(1, 2, 1)
+
+[node name="Player" type="Node3D"]
+script = ExtResource("1_ererd")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Character" parent="Pivot" instance=ExtResource("2_jx4nu")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_k741w")
+
+[node name="CharacterNameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+text = "CHARACTER NAME"
+
+[node name="HealthLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+text = "100 / 100"

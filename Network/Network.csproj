@@ -12,6 +12,12 @@
     </ItemGroup>
     
     <ItemGroup>
-        <Compile Include="bin/schemas/**/*.cs" />
+        <Compile Include="bin\packet_schemas\**\*.cs">
+            <Visible>true</Visible>
+        </Compile>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="bin\" />
     </ItemGroup>
 </Project>

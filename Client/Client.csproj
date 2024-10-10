@@ -3,10 +3,17 @@
         <TargetFramework>net8.0</TargetFramework>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <RootNamespace>Tower</RootNamespace>
+
+        <DefineConstants>$(DefineConstants);TOWER_PLATFORM_TEST</DefineConstants>
     </PropertyGroup>
     
     <ItemGroup>
-      <Content Include="project.godot" />
-      <Content Include="settings.yaml" />
+      <ProjectReference Include="..\Network\Network.csproj" />
+      <Content Include="bin\world_schemas\**\*.cs" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0-rc.2.24473.5" />
+      <PackageReference Include="YamlDotNet" Version="16.1.3" />
     </ItemGroup>
 </Project>

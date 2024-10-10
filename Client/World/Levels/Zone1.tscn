@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3 uid="uid://c001mrhvw6h40"]
+
+[ext_resource type="Script" path="res://World/Zone.cs" id="1_bypsp"]
+[ext_resource type="PackedScene" uid="uid://ct7tkhbq86hua" path="res://World/Levels/Zone1GridMap.tscn" id="2_yut6x"]
+
+[sub_resource type="Environment" id="Environment_gbbx6"]
+
+[node name="Zone1" type="Node" node_paths=PackedStringArray("GridMap")]
+script = ExtResource("1_bypsp")
+ZoneId = "F1Z1"
+SizeX = 16
+SizeZ = 16
+GridMap = NodePath("GridMap")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_gbbx6")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.255041, 0.96693, 0, -0.96693, 0.255041, 0, 12.628, 0)
+
+[node name="GridMap" parent="." instance=ExtResource("2_yut6x")]
