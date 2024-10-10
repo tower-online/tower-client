@@ -4,8 +4,8 @@
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <RootNamespace>Tower</RootNamespace>
     </PropertyGroup>
+    
     <ItemGroup>
-      <Content Include=".gitignore" />
       <Content Include="project.godot" />
       <Content Include="settings.yaml" />
     </ItemGroup>

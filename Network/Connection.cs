@@ -7,13 +7,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Tower.Network;
 
-public partial class Connection(ILogger _logger, CancellationToken _cancellationToken)
+public partial class Connection(ILogger logger)
 {
+    public event Action? Disconnected;
     public bool IsConnected => _socket?.Connected ?? false; 
     public TimeSpan Ping { get; private set; }
     
-    
-    private TcpClient? _socket;
+    private readonly TcpClient _socket = new();
     private NetworkStream? _stream;
     private bool _isConnecting = false;
     
@@ -25,62 +25,72 @@ public partial class Connection(ILogger _logger, CancellationToken _cancellation
         if (_isConnecting || IsConnected) return false;
         _isConnecting = true;
         
-        _logger.LogInformation("Connecting to {}:{}...", host, port);
+        logger.LogInformation("Connecting to {}:{}...", host, port);
         try
         {
-            _socket = new TcpClient();
             await _socket.ConnectAsync(host, port);
             _stream = _socket.GetStream();
             _socket.NoDelay = true;
         }
         catch (Exception ex)
         {
-            _logger.LogError("Error connecting: {}", ex);
+            logger.LogError("Error connecting: {}", ex);
             return false;
         }
-        
-        // Start receiving loop
-        _ = Task.Run(async () =>
+
+        _isConnecting = false;
+        return true;
+    }
+
+    public async Task Run(CancellationToken cancellationToken)
+    {
+        var receivingTask = Task.Run(async () =>
         {
-            while (IsConnected)
+            while (_socket.Connected)
             {
-                var buffer = await ReceivePacketAsync();
+                var buffer = await ReceivePacketAsync(cancellationToken);
                 if (buffer is null) continue;
                 ReceiveBufferBlock.Post(buffer);
             }
-        });
+            // logger.LogDebug("Receiving Task ending");
+        }, cancellationToken);
         
-        // Start sending loop
-        _ = Task.Run(async () =>
+        var sendingTask = Task.Run(async () =>
         {
-            while (IsConnected)
+            while (_socket.Connected)
             {
-                var buffer = await _sendBufferBlock.ReceiveAsync();
                 try
                 {
-                    await _stream!.WriteAsync(buffer.ToSizedArray());
+                    var buffer = await _sendBufferBlock.ReceiveAsync(cancellationToken);
+                    if (_stream is null) break;
+                    await _stream.WriteAsync(buffer.ToSizedArray(), cancellationToken);
                 }
                 catch (Exception)
                 {
                     Disconnect();
                 }
             }
-        });
+            // logger.LogDebug("Sending Task ending");
+        }, cancellationToken);
 
-        _isConnecting = false;
-        return true;
+        await Task.WhenAll(receivingTask, sendingTask);
     }
 
     public void Disconnect()
     {
         if (!IsConnected) return;
         
-        _logger.LogInformation("Disconnecting...");
+        ReceiveBufferBlock.Complete();
+        _sendBufferBlock.Complete();
+        
+        logger.LogInformation("Disconnecting...");
         _stream?.Close();
-        _socket?.Close();
+        _socket.Close();
 
         _stream?.Dispose();
         _stream?.Dispose();
+        
+        Disconnected?.Invoke();
     }
     
     public void SendPacket(ByteBuffer buffer)
@@ -90,17 +100,17 @@ public partial class Connection(ILogger _logger, CancellationToken _cancellation
         _sendBufferBlock.Post(buffer);
     }
     
-    private async Task<ByteBuffer?> ReceivePacketAsync()
+    private async Task<ByteBuffer?> ReceivePacketAsync(CancellationToken cancellationToken)
     {
         if (!IsConnected) return null;
 
         try
         {
             var headerBuffer = new byte[FlatBufferConstants.SizePrefixLength];
-            await _stream!.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length);
+            await _stream!.ReadExactlyAsync(headerBuffer, 0, headerBuffer.Length, cancellationToken);
 
             var bodyBuffer = new byte[ByteBufferUtil.GetSizePrefix(new ByteBuffer(headerBuffer))];
-            await _stream.ReadExactlyAsync(bodyBuffer, 0, bodyBuffer.Length);
+            await _stream.ReadExactlyAsync(bodyBuffer, 0, bodyBuffer.Length, cancellationToken);
 
             return new ByteBuffer(bodyBuffer);
         }
