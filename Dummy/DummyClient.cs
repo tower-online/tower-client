@@ -108,7 +108,9 @@ public class DummyClient
             }
         }, cancellationToken);
 
-        await Task.WhenAll(connectionTask, updateTask);
+        var pingTask = _connection.StartPingAsync(cancellationToken);
+
+        await Task.WhenAll(connectionTask, updateTask, packetHandlingTask, pingTask);
     }
 
     public void Stop()

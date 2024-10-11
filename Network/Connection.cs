@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Logging;
+using tower.network.packet;
 
 namespace Tower.Network;
 
@@ -11,7 +12,7 @@ public partial class Connection(ILogger logger)
 {
     public event Action? Disconnected;
     public bool IsConnected => _socket?.Connected ?? false; 
-    public TimeSpan Ping { get; private set; }
+    public TimeSpan CurrentPing { get; private set; }
     
     private readonly TcpClient _socket = new();
     private NetworkStream? _stream;
@@ -20,12 +21,17 @@ public partial class Connection(ILogger logger)
     public readonly BufferBlock<ByteBuffer> ReceiveBufferBlock = new();
     private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
 
+    private readonly ILogger _logger = logger;
+    
+    // Flatbuffers has bug with int64, so using dictionary here instead of adding Ping.timestamp: int64
+    private readonly Dictionary<uint, long> _pings = [];
+
     public async Task<bool> ConnectAsync(string host, ushort port)
     {
         if (_isConnecting || IsConnected) return false;
         _isConnecting = true;
         
-        logger.LogInformation("Connecting to {}:{}...", host, port);
+        _logger.LogInformation("Connecting to {}:{}...", host, port);
         try
         {
             await _socket.ConnectAsync(host, port);
@@ -34,7 +40,7 @@ public partial class Connection(ILogger logger)
         }
         catch (Exception ex)
         {
-            logger.LogError("Error connecting: {}", ex);
+            _logger.LogError("Error connecting: {}", ex);
             return false;
         }
 
@@ -83,7 +89,7 @@ public partial class Connection(ILogger logger)
         ReceiveBufferBlock.Complete();
         _sendBufferBlock.Complete();
         
-        logger.LogInformation("Disconnecting...");
+        _logger.LogInformation("Disconnecting...");
         _stream?.Close();
         _socket.Close();
 
@@ -98,6 +104,36 @@ public partial class Connection(ILogger logger)
         if (!IsConnected) return;
 
         _sendBufferBlock.Post(buffer);
+    }
+
+    public async Task StartPingAsync(CancellationToken cancellationToken)
+    {
+        uint seq = 0;
+        
+        while (_socket.Connected)
+        {
+            var builder = new FlatBufferBuilder(64);
+            var ping = Ping.CreatePing(builder, seq);
+            var packetBase = PacketBase.CreatePacketBase(builder, PacketType.Ping, ping.Value);
+            PacketBase.FinishSizePrefixedPacketBaseBuffer(builder, packetBase);
+
+            SendPacket(builder.DataBuffer);
+
+            _pings[seq] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            seq += 1;
+            if (seq == uint.MaxValue) seq = 0;
+
+            try
+            {
+                await Task.Delay(5000, cancellationToken);
+            }
+            catch (Exception)
+            {
+                break;
+            }
+            
+            _logger.LogDebug("ping {}ms", CurrentPing.Milliseconds);
+        }
     }
     
     private async Task<ByteBuffer?> ReceivePacketAsync(CancellationToken cancellationToken)

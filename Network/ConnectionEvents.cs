@@ -1,5 +1,6 @@
 using Google.FlatBuffers;
 using System;
+using Microsoft.Extensions.Logging;
 using tower.network.packet;
 
 namespace Tower.Network;
@@ -88,6 +89,10 @@ public partial class Connection
     
     private void HandlePing(Ping ping)
     {
-        Ping = TimeSpan.FromMilliseconds(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - ping.Timestamp);
+        var seq = ping.Seq;
+        if (!_pings.TryGetValue(seq, out var timestamp)) return;
+
+        CurrentPing = TimeSpan.FromMilliseconds(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - timestamp);
+        _pings.Remove(seq);
     }
 }
