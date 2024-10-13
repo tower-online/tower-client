@@ -3,6 +3,6 @@ remote_host: localhost
 remote_auth_port: 8000
 remote_main_port: 30000
 
-num_clients: 1
+num_clients: 1000
 disable_movement: false
 disable_zone_movement: true

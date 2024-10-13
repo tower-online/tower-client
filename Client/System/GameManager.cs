@@ -15,6 +15,8 @@ public partial class GameManager : Node
 	private ConnectionManager _connectionManager;
 	private EntityManager _entityManager;
 
+	private Timer _pingTimer;
+
 	public override void _Ready()
 	{
 		_connectionManager = GetNode<ConnectionManager>("/root/ConnectionManager");
@@ -22,7 +24,13 @@ public partial class GameManager : Node
 		_connectionManager.Connection.PlayerEnterZoneResponseEvent += OnPlayerEnterZoneResponse;
 
 		_entityManager = GetNode<EntityManager>("/root/EntityManager");
-		
+
+		_pingTimer = GetNode<Timer>("PingTimer");
+		_pingTimer.Timeout += () =>
+		{
+			GD.Print($"ping {_connectionManager.Connection.CurrentPing.Milliseconds}ms");
+		};
+			
 #if TOWER_PLATFORM_TEST
 		foreach (var arg in OS.GetCmdlineUserArgs())
 		{
@@ -58,6 +66,8 @@ public partial class GameManager : Node
 		builder.FinishSizePrefixed(packetBase.Value);
 
 		_connectionManager.Connection.SendPacket(builder.DataBuffer);
+		
+		_pingTimer.Start();
 	}
 
 	private void OnPlayerEnterZoneResponse(PlayerEnterZoneResponse response)
