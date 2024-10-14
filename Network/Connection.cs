@@ -132,7 +132,7 @@ public partial class Connection(ILogger logger)
                 break;
             }
             
-            _logger.LogDebug("ping {}ms", CurrentPing.Milliseconds);
+            // _logger.LogDebug("ping {}ms", CurrentPing.Milliseconds);
         }
     }
     
