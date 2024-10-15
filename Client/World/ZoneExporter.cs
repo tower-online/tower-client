@@ -14,6 +14,11 @@ public partial class ZoneExporter : Node
 	public override void _Ready()
 	{
 		GD.Print($"[{nameof(ZoneExporter)}] Exporting...");
+
+		{
+			using var dir = DirAccess.Open("res://bin/levels");
+			if (dir is null) DirAccess.MakeDirAbsolute("res://bin/levels");
+		}
 		
 		foreach (var packedZone in Zones)
 		{
