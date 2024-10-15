@@ -40,6 +40,14 @@ public class FireConditionNode(Func<bool> check) : Node
     }
 }
 
+public class BranchNode(Func<bool> check) : Node
+{
+    public override TraverseResult Traverse()
+    {
+        return check() ? Children[0].Traverse() : Children[1].Traverse();
+    }
+}
+
 public class SequenceNode : Node
 {
     public override TraverseResult Traverse()
@@ -49,6 +57,19 @@ public class SequenceNode : Node
             var result = child.Traverse();
             if (result == TraverseResult.Success) continue;
             return result;
+        }
+
+        return TraverseResult.Success;
+    }
+}
+
+public class AllSequenceNode : Node
+{
+    public override TraverseResult Traverse()
+    {
+        foreach (var child in Children)
+        {
+            child.Traverse();
         }
 
         return TraverseResult.Success;

@@ -11,6 +11,9 @@ public partial class Connection
     public event Action<PlayerSpawn>? PlayerSpawnEvent;
     public event Action<PlayerSpawns>? PlayerSpawnsEvent;
     public event Action<PlayerEnterZoneResponse>? PlayerEnterZoneResponseEvent;
+    public event Action<PlayerJoinPartyRequest>? PlayerJoinPartyRequestEvent;
+    public event Action<PlayerJoinPartyResponse>? PlayerJoinPartyResponseEvent;
+    public event Action<PlayerChat>? PlayerChatEvent;
     public event Action<EntityMovements>? EntityMovementsEvent;
     public event Action<EntitySpawns>? EntitySpawnsEvent;
     public event Action<EntityDespawn>? EntityDespawnEvent;
@@ -59,6 +62,18 @@ public partial class Connection
 
             case PacketType.PlayerEnterZoneResponse:
                 PlayerEnterZoneResponseEvent?.Invoke(packetBase.PacketBase_AsPlayerEnterZoneResponse());
+                break;
+            
+            case PacketType.PlayerJoinPartyRequest:
+                PlayerJoinPartyRequestEvent?.Invoke(packetBase.PacketBase_AsPlayerJoinPartyRequest());
+                break;
+                
+            case PacketType.PlayerJoinPartyResponse:
+                PlayerJoinPartyResponseEvent?.Invoke(packetBase.PacketBase_AsPlayerJoinPartyResponse());
+                break;
+            
+            case PacketType.PlayerChat:
+                PlayerChatEvent?.Invoke(packetBase.PacketBase_AsPlayerChat());
                 break;
 
             case PacketType.ClientJoinResponse:

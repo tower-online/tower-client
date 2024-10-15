@@ -4,8 +4,14 @@ namespace Tower.Dummy;
 
 public class Environment
 {
+    public uint CurrentZoneId { get; set; }
     // public Dictionary<uint, Entity> Entities { get; } = new();
     public Dictionary<uint, PlayerBase> OtherPlayers { get; } = new();
+
+    public void Clear()
+    {
+        OtherPlayers.Clear();
+    }
 
     public void OnPlayerSpawn(PlayerSpawn spawn)
     {

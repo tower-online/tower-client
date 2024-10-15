@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 ConnectionManager="*res://System/ConnectionManager.cs"
 GameManager="*res://System/GameManager.tscn"
 EntityManager="*res://Entity/EntityManager.cs"
+ChatManager="*res://System/ChatManager.tscn"
 
 [display]
 

@@ -7,7 +7,7 @@ using tower.network.packet;
 
 namespace Tower.Dummy;
 
-public class DummyClient
+public partial class DummyClient
 {
     private readonly string _username;
     private readonly Connection _connection;
@@ -16,70 +16,14 @@ public class DummyClient
 
     private string? _authToken;
     private DummyPlayer? _player;
-    
+    private uint _clientId;
+
     // Behaviors
     private readonly BehaviorTree _behavior;
-    private DateTime _stayZoneUntil;
-    private bool hasParty = false;
-
-    private BehaviorTree CreateBehaviorTree()
-    {
-        var root = new SequenceNode();
-        var tree = new BehaviorTree(root);
-
-        var movementFireCondition = new FireConditionNode(() =>
-        {
-            if (Settings.MovementDisabled || _player is null) return false;
-            if (DateTime.Now < _player.LastTransition + _player.TransitionStay) return false;
-            _player.LastTransition = DateTime.Now;
-            _player.TransitionStay = TimeSpan.FromSeconds(Random.Shared.Next(3, 10));
-            return true;
-
-        });
-        root.AddChild(movementFireCondition);
-
-        var movementSelector = new RandomSelectorNode();
-        movementFireCondition.AddChild(movementSelector);
-
-        var movementIdle = new ExecutionNode(() =>
-        {
-            if (_player is null) return Node.TraverseResult.Failure;
-
-            _player.TargetDirection = new System.Numerics.Vector3(0, 0, 0);
-            HandleMovement();
-
-            return Node.TraverseResult.Success;
-        });
-        movementSelector.AddChild(movementIdle);
-
-        var movementMoving = new ExecutionNode(() =>
-        {
-            if (_player is null) return Node.TraverseResult.Failure;
-
-            _player.TargetDirection = new System.Numerics.Vector3(
-                (float)Random.Shared.NextDouble() * 2.0f - 1.0f,
-                0,
-                (float)Random.Shared.NextDouble() * 2.0f - 1.0f);
-            HandleMovement();
-
-            return Node.TraverseResult.Success;
-        });
-        movementSelector.AddChild(movementMoving);
-
-        var zoneMoveFireCondition = new FireConditionNode(() => !Settings.ZoneMovementDisabled && DateTime.Now > _stayZoneUntil);
-        root.AddChild(zoneMoveFireCondition);
-
-        var zoneMove = new ExecutionNode(() =>
-        {
-            HandleZoneMove((uint)Random.Shared.Next(1, 10));
-
-            _stayZoneUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(5, 15));
-            return Node.TraverseResult.Success;
-        });
-        zoneMoveFireCondition.AddChild(zoneMove);
-
-        return tree;
-    }
+    private DateTime _stayZoneUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(5, 15));
+    private DateTime _stayPartyUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(5, 15));
+    private DateTime _waitChatUntil = DateTime.Now;
+    private bool _hasParty = false;
 
     public DummyClient(string username, ILoggerFactory loggerFactory)
     {
@@ -90,14 +34,11 @@ public class DummyClient
         _connection.Disconnected += Stop;
 
         _connection.ClientJoinResponseEvent += OnClientJoinResponse;
-        _connection.PlayerEnterZoneResponseEvent += response =>
-        {
-            if (response.Result) return;
-            _logger.LogWarning("PlayerEnterZone failed");
-        };
-
+        _connection.PlayerEnterZoneResponseEvent += OnPlayerEnterZoneResponse;
         _connection.PlayerSpawnEvent += _environment.OnPlayerSpawn;
         _connection.PlayerSpawnsEvent += _environment.OnPlayerSpawns;
+        _connection.PlayerJoinPartyRequestEvent += OnPlayerJoinPartyRequest;
+        _connection.PlayerJoinPartyResponseEvent += OnPlayerJoinPartyResponse;
         _connection.EntityDespawnEvent += _environment.OnEntityDespawn;
 
         _behavior = CreateBehaviorTree();
@@ -146,7 +87,6 @@ public class DummyClient
         _connection.SendPacket(builder.DataBuffer);
 
         // Start update loop
-        _stayZoneUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(5, 15));
         var updateTask = Task.Run(async () =>
         {
             while (_connection.IsConnected)
@@ -160,7 +100,7 @@ public class DummyClient
                     break;
                 }
 
-                Update();
+                _behavior.Run();
             }
         }, cancellationToken);
 
@@ -192,32 +132,96 @@ public class DummyClient
         _connection.Disconnect();
     }
 
-    private void Update()
+    private BehaviorTree CreateBehaviorTree()
     {
-        _behavior.Run();
+        var root = new AllSequenceNode();
+        var tree = new BehaviorTree(root);
+
+        var movementFireCondition = new FireConditionNode(() =>
+        {
+            if (Settings.MovementDisabled || _player is null) return false;
+            if (DateTime.Now < _player.LastTransition + _player.TransitionStay) return false;
+            _player.LastTransition = DateTime.Now;
+            _player.TransitionStay = TimeSpan.FromSeconds(Random.Shared.Next(3, 10));
+            return true;
+        });
+        root.AddChild(movementFireCondition);
+
+        var movementSelector = new RandomSelectorNode();
+        movementFireCondition.AddChild(movementSelector);
+
+        var movementIdle = new ExecutionNode(() =>
+        {
+            if (_player is null) return Node.TraverseResult.Failure;
+
+            _player.TargetDirection = new System.Numerics.Vector3(0, 0, 0);
+            DoMovement();
+
+            return Node.TraverseResult.Success;
+        });
+        movementSelector.AddChild(movementIdle);
+
+        var movementMoving = new ExecutionNode(() =>
+        {
+            if (_player is null) return Node.TraverseResult.Failure;
+
+            _player.TargetDirection = new System.Numerics.Vector3(
+                (float)Random.Shared.NextDouble() * 2.0f - 1.0f,
+                0,
+                (float)Random.Shared.NextDouble() * 2.0f - 1.0f);
+            DoMovement();
+
+            return Node.TraverseResult.Success;
+        });
+        movementSelector.AddChild(movementMoving);
+
+        var zoneMoveFireCondition =
+            new FireConditionNode(() => !Settings.ZoneMovementDisabled && DateTime.Now > _stayZoneUntil);
+        root.AddChild(zoneMoveFireCondition);
+
+        var zoneMove = new ExecutionNode(() =>
+        {
+            DoZoneMove((uint)Random.Shared.Next(1, 10));
+
+            _stayZoneUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(5, 15));
+            return Node.TraverseResult.Success;
+        });
+        zoneMoveFireCondition.AddChild(zoneMove);
+
+        var partyMoveFireCondition = new FireConditionNode(() =>
+        {
+            if (DateTime.Now < _stayPartyUntil) return false;
+            _stayPartyUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(5, 15));
+            return true;
+        });
+        root.AddChild(partyMoveFireCondition);
+
+        var partyMove = new ExecutionNode(() =>
+        {
+            DoPartyMove();
+            return Node.TraverseResult.Success;
+        });
+        partyMoveFireCondition.AddChild(partyMove);
+
+        var chatFireCondition = new FireConditionNode(() =>
+        {
+            if (DateTime.Now < _waitChatUntil) return false;
+            _waitChatUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(3, 10));
+            return true;
+        });
+        root.AddChild(chatFireCondition);
+
+        var chat = new ExecutionNode(() =>
+        {
+            DoChat();
+            return Node.TraverseResult.Success;
+        });
+        chatFireCondition.AddChild(chat);
+
+        return tree;
     }
 
-    private void OnClientJoinResponse(ClientJoinResponse response)
-    {
-        _logger.LogInformation("Joined main server");
-
-        var spawn = response.Spawn.Value;
-        var playerData = spawn.Data.Value;
-        var location = response.CurrentLocation.Value;
-
-        _player = new DummyPlayer(spawn.EntityId, spawn.ClientId, playerData.Name);
-
-        var builder = new FlatBufferBuilder(128);
-        PlayerEnterZoneRequest.StartPlayerEnterZoneRequest(builder);
-        PlayerEnterZoneRequest.AddLocation(builder,
-            WorldLocation.CreateWorldLocation(builder, location.Floor, location.ZoneId));
-        var request = PlayerEnterZoneRequest.EndPlayerEnterZoneRequest(builder);
-        var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerEnterZoneRequest, request.Value);
-        builder.FinishSizePrefixed(packetBase.Value);
-        _connection.SendPacket(builder.DataBuffer);
-    }
-
-    private void HandleMovement()
+    private void DoMovement()
     {
         FlatBufferBuilder builder = new(128);
         PlayerMovement.StartPlayerMovement(builder);
@@ -231,7 +235,7 @@ public class DummyClient
         _connection.SendPacket(builder.DataBuffer);
     }
 
-    private void HandleZoneMove(uint newZoneId)
+    private void DoZoneMove(uint newZoneId)
     {
         FlatBufferBuilder builder = new(128);
         PlayerEnterZoneRequest.StartPlayerEnterZoneRequest(builder);
@@ -240,6 +244,50 @@ public class DummyClient
         var request = PlayerEnterZoneRequest.EndPlayerEnterZoneRequest(builder);
         var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerEnterZoneRequest, request.Value);
         PacketBase.FinishSizePrefixedPacketBaseBuffer(builder, packetBase);
+
+        _connection.SendPacket(builder.DataBuffer);
+    }
+
+    private void DoPartyMove()
+    {
+        if (_hasParty)
+        {
+            FlatBufferBuilder builder = new(128);
+            var leave = PlayerLeaveParty.CreatePlayerLeaveParty(builder, 0, PlayerLeavePartyReason.REQUESTED);
+            var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerLeaveParty, leave.Value);
+            builder.FinishSizePrefixed(packetBase.Value);
+
+            _connection.SendPacket(builder.DataBuffer);
+
+            _hasParty = false;
+            return;
+        }
+        
+        // Find new party
+        var otherPlayers = _environment.OtherPlayers;
+        if (otherPlayers.Count == 0) return;
+        
+        var requesteePlayer = otherPlayers.ElementAt(Random.Shared.Next(otherPlayers.Count)).Value;
+        {
+            FlatBufferBuilder builder = new(128);
+            var leave = PlayerJoinPartyRequest.CreatePlayerJoinPartyRequest(builder, _clientId, requesteePlayer.ClientId);
+            var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerJoinPartyRequest, leave.Value);
+            builder.FinishSizePrefixed(packetBase.Value);
+
+            _connection.SendPacket(builder.DataBuffer);
+        }
+    }
+
+    private void DoChat()
+    {
+        // var targets = Enum.GetValues(typeof(PlayerChatTarget));
+        // var target = (PlayerChatTarget)targets.GetValue(Random.Shared.Next(targets.Length))!;
+        
+        FlatBufferBuilder builder = new(256);
+        var message = builder.CreateString(ChatScripts.Pick());
+        var chat = PlayerChat.CreatePlayerChat(builder, PlayerChatTarget.ZONE, 0, message);
+        var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerChat, chat.Value);
+        builder.FinishSizePrefixed(packetBase.Value);
 
         _connection.SendPacket(builder.DataBuffer);
     }
