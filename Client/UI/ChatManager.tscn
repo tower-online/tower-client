@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://b4shdcl5wa8ny"]
+
+[ext_resource type="Script" path="res://UI/ChatManager.cs" id="1_xvwyd"]
+
+[node name="ChatManager" type="Node"]
+script = ExtResource("1_xvwyd")
+
+[node name="ChatBoxes" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(500, 500)
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -500.0
+offset_right = 400.0
+grow_vertical = 0
+alignment = 2

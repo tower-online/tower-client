@@ -285,7 +285,7 @@ public partial class DummyClient
         
         FlatBufferBuilder builder = new(256);
         var message = builder.CreateString(ChatScripts.Pick());
-        var chat = PlayerChat.CreatePlayerChat(builder, PlayerChatTarget.ZONE, 0, message);
+        var chat = PlayerChat.CreatePlayerChat(builder, PlayerChatTarget.ZONE, 0, default, message);
         var packetBase = PacketBase.CreatePacketBase(builder, PacketType.PlayerChat, chat.Value);
         builder.FinishSizePrefixed(packetBase.Value);
 
