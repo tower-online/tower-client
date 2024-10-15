@@ -206,7 +206,7 @@ public partial class DummyClient
         var chatFireCondition = new FireConditionNode(() =>
         {
             if (DateTime.Now < _waitChatUntil) return false;
-            _waitChatUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(3, 10));
+            _waitChatUntil = DateTime.Now + TimeSpan.FromSeconds(Random.Shared.Next(5, 15));
             return true;
         });
         root.AddChild(chatFireCondition);
