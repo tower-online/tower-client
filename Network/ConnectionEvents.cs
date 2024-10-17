@@ -1,5 +1,4 @@
 using Google.FlatBuffers;
-using System;
 using Microsoft.Extensions.Logging;
 using tower.network.packet;
 
@@ -19,6 +18,7 @@ public partial class Connection
     public event Action<EntityDespawn>? EntityDespawnEvent;
     public event Action<EntityResourceChanges>? EntityResourceChangesEvent; 
     public event Action<SkillMeleeAttack>? SkillMeleeAttackEvent;
+    public event Action<ItemSpawn>? ItemSpawnEvent;
     
     public void HandlePacket(ByteBuffer buffer)
     {
@@ -46,6 +46,10 @@ public partial class Connection
             
             case PacketType.EntityResourceChanges:
                 EntityResourceChangesEvent?.Invoke(packetBase.PacketBase_AsEntityResourceChanges());
+                break;
+            
+            case PacketType.ItemSpawn:
+                ItemSpawnEvent?.Invoke(packetBase.PacketBase_AsItemSpawn());
                 break;
             
             case PacketType.SkillMeleeAttack:
@@ -86,6 +90,10 @@ public partial class Connection
 
             case PacketType.Ping:
                 HandlePing(packetBase.PacketBase_AsPing());
+                break;
+            
+            default:
+                _logger.LogWarning("Unknown packet type");
                 break;
         }
     }

@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://bls52h5xupjbd"]
+
+[ext_resource type="Script" path="res://Item/Item.cs" id="1_awubg"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_axdnd"]
+
+[node name="Item" type="Node3D"]
+script = ExtResource("1_awubg")
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.37548, 0)
+text = "None (0)"
+
+[node name="Shape" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0.122904, 0)
+mesh = SubResource("SphereMesh_axdnd")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(1, 1, 0, 1)
+omni_range = 1.0

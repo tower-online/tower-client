@@ -21,6 +21,7 @@ ConnectionManager="*res://System/ConnectionManager.cs"
 GameManager="*res://System/GameManager.tscn"
 EntityManager="*res://Entity/EntityManager.cs"
 ChatManager="*res://UI/ChatManager.tscn"
+ItemManager="*res://Item/ItemManager.cs"
 
 [display]
 

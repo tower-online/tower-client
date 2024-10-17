@@ -1,7 +1,5 @@
 using Google.FlatBuffers;
-using System;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Logging;
 using tower.network.packet;
@@ -16,7 +14,7 @@ public partial class Connection(ILogger logger)
     
     private readonly TcpClient _socket = new();
     private NetworkStream? _stream;
-    private bool _isConnecting = false;
+    private bool _isConnecting;
     
     public readonly BufferBlock<ByteBuffer> ReceiveBufferBlock = new();
     private readonly BufferBlock<ByteBuffer> _sendBufferBlock = new();
