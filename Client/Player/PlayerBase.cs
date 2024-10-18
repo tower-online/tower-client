@@ -14,6 +14,7 @@ public partial class PlayerBase : EntityBase
 {
 	public bool IsMaster { get; set; } = false;
 	public string CharacterName { get; set; }
+	public Area3D InteractionArea { get; private set; }
 	
 	//TODO: Change to edge trigger
 	private readonly TimeSpan _movementTickInterval = TimeSpan.FromMilliseconds(50);
@@ -37,6 +38,12 @@ public partial class PlayerBase : EntityBase
 		ResourceModified += OnResourceModified;
 
 		_healthLabel.Text = $"{Health} / {MaxHealth}";
+
+		InteractionArea = GetNode<Area3D>("Pivot/InteractionArea");
+		if (!IsMaster)
+		{
+			InteractionArea.SetProcess(false);
+		}
 	}
 
 	public override void _PhysicsProcess(double delta)

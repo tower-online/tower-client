@@ -19,6 +19,8 @@ public partial class Connection
     public event Action<EntityResourceChanges>? EntityResourceChangesEvent; 
     public event Action<SkillMeleeAttack>? SkillMeleeAttackEvent;
     public event Action<ItemSpawn>? ItemSpawnEvent;
+    public event Action<ItemSpawns>? ItemSpawnsEvent;
+    public event Action<ItemDespawn>? ItemDespawnEvent; 
     
     public void HandlePacket(ByteBuffer buffer)
     {
@@ -50,6 +52,14 @@ public partial class Connection
             
             case PacketType.ItemSpawn:
                 ItemSpawnEvent?.Invoke(packetBase.PacketBase_AsItemSpawn());
+                break;
+            
+            case PacketType.ItemSpawns:
+                ItemSpawnsEvent?.Invoke(packetBase.PacketBase_AsItemSpawns());
+                break;
+            
+            case PacketType.ItemDespawn:
+                ItemDespawnEvent?.Invoke(packetBase.PacketBase_AsItemDespawn());
                 break;
             
             case PacketType.SkillMeleeAttack:

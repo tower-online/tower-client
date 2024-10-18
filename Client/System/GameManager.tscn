@@ -6,3 +6,4 @@
 script = ExtResource("1_7qvi0")
 
 [node name="PingTimer" type="Timer" parent="."]
+wait_time = 10.0

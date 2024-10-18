@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://Player/PlayerBase.cs" id="1_ererd"]
 [ext_resource type="PackedScene" uid="uid://cmrsrwv76iypv" path="res://Player/PlayerModel.tscn" id="2_jx4nu"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_k741w"]
-size = Vector3(1, 2, 1)
+[sub_resource type="SphereShape3D" id="SphereShape3D_qaykf"]
+radius = 1.0
 
 [node name="Player" type="Node3D"]
 script = ExtResource("1_ererd")
@@ -13,9 +13,13 @@ script = ExtResource("1_ererd")
 
 [node name="Character" parent="Pivot" instance=ExtResource("2_jx4nu")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Pivot"]
+[node name="InteractionArea" type="Area3D" parent="Pivot"]
+collision_layer = 0
+collision_mask = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pivot/InteractionArea"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-shape = SubResource("BoxShape3D_k741w")
+shape = SubResource("SphereShape3D_qaykf")
 
 [node name="CharacterNameLabel" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)

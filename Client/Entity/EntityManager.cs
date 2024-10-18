@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using System.Collections.Generic;
 using Tower.Network;
@@ -10,6 +11,8 @@ namespace Tower.Entity;
 
 public partial class EntityManager : Node
 {
+    public Action<PlayerBase> LocalPlayerSpawnedEvent;
+    
     private ConnectionManager _connectionManager;
     private readonly Dictionary<uint, EntityBase> _entities = new();
     private PlayerBase _localPlayer;
@@ -168,6 +171,8 @@ public partial class EntityManager : Node
         var mainCamera = _mainCameraScene.Instantiate();
         mainCamera.Set("target", (Node3D)player);
         AddSibling(mainCamera);
+        
+        LocalPlayerSpawnedEvent?.Invoke(_localPlayer);
     }
 
     private void OnPlayerSpawns(PlayerSpawns spawns)
